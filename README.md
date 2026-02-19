@@ -1,0 +1,1 @@
+# mqttsn-aggregating-gateway-preon32
