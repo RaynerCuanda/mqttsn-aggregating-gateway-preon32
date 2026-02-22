@@ -1,5 +1,5 @@
 // TO DO: IMPORTANT! LEARN HOW TO PACK SEVERAL MENU to 1 BYTE  (BIT MANIPULATION)
-
+// Asumsi: Header selalu 1 byte.
 public class MQTTSNPacket {
 
     public static final byte ADVERTISE = 0x00; // Done Testing
@@ -92,6 +92,7 @@ public class MQTTSNPacket {
         this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
         this.msgHeader[1] = CONNECT;
 
+        // TO DO: TIDAK SESUAI SPESIFIKASI MQTT SN SPEC, HARUS PAKE BIT MANIPULATION
         //di hard code karena hanya ada pada pesan CONNECT
         if (flag_cleansession == true && flag_will == true){ // Both Enabled
             this.msgVariablePart[0] = 0x0C;

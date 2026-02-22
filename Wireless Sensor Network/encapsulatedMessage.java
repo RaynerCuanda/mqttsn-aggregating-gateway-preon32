@@ -1,4 +1,4 @@
-public class encapsulatedMessage extends MQTTSNPacket{
+public class encapsulatedMessage{
     private byte[] wirelessNodeId;
     private MQTTSNPacket packet;
 
