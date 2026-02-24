@@ -45,3 +45,8 @@ client.on('message', function (topic, message) {
 server.listen(8080, () => {
     console.log('Server berjalan di http://localhost:8080');
 });
+
+// MQTT_HOST = 'b6f0de39dbdb4fbc89413670aabed28a.s1.eu.hivemq.cloud'
+// MQTT_USER = 'raynercuanda'
+// MQTT_PASS = 'Rayner123'
+// MQTT_PORT = 8883
