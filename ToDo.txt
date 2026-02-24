@@ -1,0 +1,5 @@
+MQTTSNPacket --> Learn about flags, bit manipulation
+
+Frontend --> Learn how to use react
+
+Backend --> Learn how to connect to broker, and backend framework
