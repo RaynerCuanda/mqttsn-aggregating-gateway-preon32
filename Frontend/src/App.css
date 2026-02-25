@@ -1,27 +1,46 @@
 .dashboard-layout{
   display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
   min-height: 100vh;
   width: 100%;
+  gap: 64px;
 }
 
-.dashboard-layout * {
-  margin-top: 0.3rem;
-}
-
-.wrapper{
+.room-wrapper{
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
+  border-radius: 1rem;
+  color: #1e293b;
+  background-color: white;
+  border: 1px solid #bdd6f0;
+    box-shadow: 0 12px 30px -8px rgba(20, 45, 70, 0.08), 0 4px 8px rgba(0, 0, 0, 0.02);
+    padding: 2rem;
+
+}
+
+.payload-wrapper{
+  display: flex;
+  flex-direction: column;
+  
+}
+
+.room-name{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  font-size: 2rem;
+  font-weight: 600;
+  border-bottom: 2px solid #e3ecf5;
 }
 
 .payload-card-box{
   display: flex;
-  flex-direction: row;
-  padding: 1rem;
-  width: 12rem; 
-  border: 1px solid white;
+  padding: 1.5rem;
+  width: 20rem; 
 }
 
 .payload-image{
@@ -36,45 +55,31 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-left: 0.5rem;
 }
 
 .wrapper-payload * {
   justify-content: center;
-  
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #334e68;
+}
+
+.payload-name{
+  /* font-size: 1.25rem; */
 }
 
 .wrapper-content{
   display: flex;
   flex-direction: row;
+
   gap: 10px;
 }
 
-.payload-name{
-  font-size: 1rem;
-}
-
 .payload-content{
-  font-size: 1.25rem;
+  /* font-size: 1.25rem; */
 }
 
 .payload-unit{
-  font-size: 1.25rem;
+  /* font-size: 1.25rem; */
 }
 
-.room-wrapper{
-  display: flex;
-  flex-direction: row;
-  gap: 1rem;
-  /* border: 1px solid aqua; */
-}
-
-.room-name{
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 1rem;
-  width: 12rem; 
-  /* border: 1px solid ; */
-  font-size: 1.25rem;
-}

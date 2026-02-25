@@ -1,6 +1,6 @@
 // https://console.hivemq.cloud/clusters/b6f0de39dbdb4fbc89413670aabed28a/getting-started/clients/mqtt-js
-
-// mqtt pub -h b6f0de39dbdb4fbc89413670aabed28a.s1.eu.hivemq.cloud -p 8883 -s -u raynercuanda -Rayner123 -t 'my/test/topic' -m 'Hello'
+// https://console.hivemq.cloud/clusters/b6f0de39dbdb4fbc89413670aabed28a/web-client
+// Publish Testing  username: admin, password: Admin123
 import express from 'express';
 import cors from 'cors';
 import { Server } from "socket.io";
@@ -31,7 +31,7 @@ var client = mqtt.connect(mqttOptions);
 
 client.on('connect', function () {
     console.log('Connection to Broker Established');
-    client.subscribe('9017/temperature');
+    client.subscribe('+/+');
 });
 
 client.on('error', function (error) {
@@ -41,9 +41,10 @@ client.on('error', function (error) {
 client.on('message', function (topic, message) {
     const topicPart = topic.split('/');
     const roomName = topicPart[0];
-    const payloadType = topicPart[1];
+    const payloadName = topicPart[1];
     const payloadContent = message.toString();
-    ioSocket.emit('mqtt_data', {roomName: roomName, payloadType: payloadType, payloadContent: payloadContent});
+    ioSocket.emit('mqtt_data', {roomName: roomName, payloadName: payloadName, payloadContent: payloadContent});
+    // console.log({roomName: roomName, payloadName: payloadName, payloadContent: payloadContent});
     // console.log(topic)
     // console.log(payload_content)
 });

@@ -1,6 +1,7 @@
 import './App.css'
 import io from 'socket.io-client'
 import { useEffect, useState } from 'react';
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
 
 const socket = io.connect("http://localhost:8080");
 
@@ -19,51 +20,65 @@ function MyPayload({ payloadImageSrc, payloadName, payloadContent, payloadUnit }
   );
 }
 
-function MyRoom({roomId, payloadContent}){
-  const [temperature, setTemperature] = useState()
-  const [humidity, setHumidity] = useState()
-  const [airPressure, setAirPressure] = useState()
-  const [lightIntensity, setLightIntensity] = useState()
-  const [vibration, setVibration] = useState()
+function MyRoom({roomId}){
+  
+  const initialData = [
+    {topicName: "temperature"      ,value: 0, unit: " °C"  , imgSrc: "temperature.png", label: "Temperature"},
+    {topicName: "air_pressure"     ,value: 0, unit: " kPa" , imgSrc: "temperature.png", label: "Air Pressure"},
+    {topicName: "humidity"         ,value: 0, unit: " %RH" , imgSrc: "temperature.png", label: "Humidity"},
+    {topicName: "light_intensity"  ,value: 0, unit: " lx"  , imgSrc: "temperature.png", label: "Light Intensity"},
+    {topicName: "vibration"        ,value: 0, unit: " g"   , imgSrc: "temperature.png", label: "Vibration"},
+  ]
+  
+  const [sensorData, setSensorData] = useState(initialData)
+
+  // sumber: https://react.dev/learn/updating-arrays-in-state
+  function updateSensorData(payloadName, payloadContent){
+    const nextList = sensorData.map(payload => {
+      if(payload.topicName === payloadName){
+        return{...payload, value: payloadContent};
+      } else{
+        return payload;
+      }
+    });
+    setSensorData(nextList);
+  }
   
   useEffect(() =>{
     socket.on('mqtt_data', (data) => {
-      console.log(data);
+      if (data.roomName == roomId){
+        updateSensorData(data.payloadName, data.payloadContent)
+      }
+      // console.log(data);
     })
   }, [socket])
-
-  const payloadData = [
-    { id: 1, image: "public/temperature.png", payloadName: "Temperature", unit: " °C" },
-    { id: 2, image: "public/vite.svg", payloadName: "Humidity", unit: " % RH" },
-    { id: 3, image: "public/vite.svg", payloadName: "Air Pressure", unit: " kPa" },
-    { id: 4, image: "public/vite.svg", payloadName: "Light Intensity", unit: " lx" },
-    { id: 5, image: "public/vite.svg", payloadName: "Vibration", unit: " g" },
-  ]
 
   return(
     <div className='room-wrapper'>
       <div className="room-name">{roomId}</div>
-      {payloadData.map((item) => (
-        <MyPayload
-          key={item.id}
-          payloadImageSrc={item.image}
-          payloadName={item.payloadName}
-          payloadContent={item.content}
-          payloadUnit={item.unit}
-        />
-      ))}      
+      <div className='payload-wrapper'>
+        {sensorData.map((item) => (
+          <MyPayload
+            key={item.topicName}
+            payloadImageSrc={item.imgSrc}
+            payloadName={item.label}
+            payloadContent={item.value}
+            payloadUnit={item.unit}
+          />
+        ))}      
+      </div>
     </div>
   );
 }
 
 export default function App() {
-
   return (
     <>
       <div className='dashboard-layout'>
+        <MyRoom roomId={9017}/>
         <MyRoom roomId={9018}/>
-        <MyRoom roomId={9019}/>
-        <MyRoom roomId={9020}/>
+        {/* <MyRoom roomId={9019}/>
+        <MyRoom roomId={9020}/> */}
       </div>
     </>
   )

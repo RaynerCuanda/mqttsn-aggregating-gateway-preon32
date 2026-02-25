@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pro·sensor | room dashboard</title>
+  <!-- Font Awesome 6 (free icons) -->
+  <!-- Google Font: Inter – modern, professional sans‑serif -->
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      background-color: #f4f7fc;  /* soft, light background */
+      color: #1e293b;
+      line-height: 1.5;
+      padding: 2rem 1.5rem;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .dashboard {
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* header area – clean and airy */
+    .dashboard-header {
+      margin-bottom: 2.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 1rem;
+    }
+
+    .dashboard-header h1 {
+      font-weight: 600;
+      font-size: 2.2rem;
+      letter-spacing: -0.02em;
+      color: #0a1a2f;
+      line-height: 1.2;
+    }
+
+    .dashboard-header h1 span {
+      font-weight: 300;
+      color: #2c6e9c;
+      margin: 0 0.15rem;
+    }
+
+    .badge-total {
+      background-color: #e1ecfe;
+      color: #1f4a7a;
+      padding: 0.45rem 1.2rem;
+      border-radius: 40px;
+      font-weight: 500;
+      font-size: 1rem;
+      border: 1px solid #bdd6f0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .badge-total i {
+      margin-right: 0.5rem;
+      font-size: 0.9rem;
+      color: #2c6e9c;
+    }
+
+    /* responsive grid – min 300px, auto‑fit */
+    .room-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.8rem;
+    }
+
+    /* card style – subtle, elevated, with soft border */
+    .room-card {
+      background-color: #ffffff;
+      border-radius: 1.8rem;
+      padding: 1.8rem 1.5rem 1.8rem 1.5rem;
+      transition: all 0.2s ease;
+      border: 1px solid #eef3f8;
+      backdrop-filter: blur(2px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .room-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 24px 40px -12px rgba(17, 55, 90, 0.15);
+      border-color: #cdddec;
+    }
+
+    /* room name – prominent, with subtle underline */
+    .room-name {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #0f2b3f;
+      margin-bottom: 1.2rem;
+      padding-bottom: 0.7rem;
+      border-bottom: 2px solid #e3ecf5;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .room-name i {
+      font-size: 1.6rem;
+      color: #3d7eb3;
+      opacity: 0.7;
+    }
+
+    /* sensor list – clean rows */
+    .sensor-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 0.3rem;
+    }
+
+    .sensor-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 1.05rem;
+    }
+
+    .sensor-label {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      color: #334e68;
+      font-weight: 500;
+    }
+
+    .sensor-label i {
+      width: 1.8rem;
+      font-size: 1.25rem;
+      color: #2c6e9c;        /* calm blue for icons */
+      text-align: center;
+    }
+
+    .sensor-value {
+      font-weight: 600;
+      color: #1a3349;
+      background: #f6faff;
+      padding: 0.4rem 1rem;
+      border-radius: 3rem;
+      font-size: 1rem;
+      border: 1px solid #d9e6f2;
+      min-width: 95px;
+      text-align: right;
+      box-shadow: inset 0 1px 2px #ffffff, 0 1px 2px rgba(0,0,0,0.02);
+    }
+
+    .unit {
+      font-weight: 400;
+      color: #5f7d9c;
+      margin-left: 0.2rem;
+      font-size: 0.85rem;
+    }
+
+    /* footer – light, discreet */
+    .dashboard-footer {
+      margin-top: 3.5rem;
+      text-align: center;
+      color: #7b98b5;
+      font-size: 0.9rem;
+      border-top: 1px solid #dae6f0;
+      padding-top: 1.8rem;
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .dashboard-footer span i {
+      margin-right: 0.4rem;
+      color: #517ea8;
+    }
+
+    /* tiny responsive touches */
+    @media (max-width: 480px) {
+      body { padding: 1rem; }
+      .room-card { padding: 1.5rem; }
+      .sensor-value { min-width: 80px; }
+      .dashboard-header h1 { font-size: 1.9rem; }
+    }
+
+    /* optional micro-interaction: last update pulse */
+    .live-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background-color: #46b17b;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+      box-shadow: 0 0 0 2px #dcfce7;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.1); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+<div class="dashboard">
+  <!-- header with total rooms & live hint -->
+  <div class="dashboard-header">
+    <div>
+      <h1>
+        <i class="fas fa-building" style="font-size: 2rem; color: #2c6e9c; margin-right: 0.5rem;"></i>
+        roo<span>·</span>sense
+      </h1>
+      <p style="color: #46688f; margin-top: 0.3rem; font-weight: 400;">
+        <i class="fas fa-microchip" style="margin-right: 0.4rem;"></i>environmental snapshot • 5 metrics per room
+      </p>
+    </div>
+    <div class="badge-total">
+      <i class="fas fa-door-open"></i> 5 active rooms
+    </div>
+  </div>
+
+  <!-- dynamic room grid injected from javascript -->
+  <div class="room-grid" id="roomGrid"></div>
+
+  <!-- footer with status and dummy timestamp -->
+  <div class="dashboard-footer">
+    <span><i class="fas fa-sync-alt fa-xs"></i> live data · update every 30s</span>
+    <span><i class="fas fa-check-circle"></i> all sensors operational</span>
+    <span><span class="live-indicator"></span> last: just now</span>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // --------------------------------------------------------------
+    // sample room data – professional naming & realistic values
+    // each room contains the 5 required metrics + room name
+    // --------------------------------------------------------------
+    const rooms = [
+      {
+        name: 'Conference A',
+        temp: 22.4,
+        pressure: 1012.7,
+        vibration: 0.09,
+        humidity: 46,
+        light: 380
+      },
+      {
+        name: 'Server Core',
+        temp: 24.9,
+        pressure: 1009.2,
+        vibration: 0.14,
+        humidity: 35,
+        light: 210
+      },
+      {
+        name: 'Open Space',
+        temp: 23.2,
+        pressure: 1014.5,
+        vibration: 0.06,
+        humidity: 52,
+        light: 670
+      },
+      {
+        name: 'Lab West',
+        temp: 21.7,
+        pressure: 1013.0,
+        vibration: 0.23,
+        humidity: 41,
+        light: 490
+      },
+      {
+        name: 'Meeting Pod',
+        temp: 22.1,
+        pressure: 1011.3,
+        vibration: 0.11,
+        humidity: 48,
+        light: 305
+      }
+    ];
+
+    // reference to grid container
+    const grid = document.getElementById('roomGrid');
+    if (!grid) return;
+
+    // clear any placeholder (just to be safe) and build cards
+    grid.innerHTML = '';
+
+    rooms.forEach(room => {
+      // create card element
+      const card = document.createElement('div');
+      card.className = 'room-card';
+
+      // --- room name with a small icon (building/room) ---
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'room-name';
+      nameDiv.innerHTML = `<i class="fas fa-door-closed" style="font-size: 1.4rem;"></i> ${room.name}`;
+
+      // --- sensor list container ---
+      const sensorList = document.createElement('div');
+      sensorList.className = 'sensor-list';
+
+      // helper to build a sensor row
+      function createSensorRow(iconClass, labelText, value, unit, decimalPlaces = 1) {
+        const row = document.createElement('div');
+        row.className = 'sensor-item';
+
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'sensor-label';
+        labelSpan.innerHTML = `<i class="${iconClass}"></i> ${labelText}`;
+
+        const valueSpan = document.createElement('span');
+        valueSpan.className = 'sensor-value';
+
+        // format number (handle integers or decimals)
+        let formattedValue = value;
+        if (Number.isFinite(value)) {
+          if (Number.isInteger(value) && unit === '%' || unit === 'lux') {
+            formattedValue = value; // keep integer for humidity/light
+          } else {
+            formattedValue = value.toFixed(decimalPlaces);
+          }
+        }
+        valueSpan.innerHTML = `${formattedValue} <span class="unit">${unit}</span>`;
+
+        row.appendChild(labelSpan);
+        row.appendChild(valueSpan);
+        return row;
+      }
+
+      // build rows: order as requested: temperature, air pressure, vibration, humidity, light
+      sensorList.appendChild(createSensorRow('fas fa-thermometer-half', 'Temperature', room.temp, '°C', 1));
+      sensorList.appendChild(createSensorRow('fas fa-gauge-high', 'Air pressure', room.pressure, 'hPa', 1));
+      sensorList.appendChild(createSensorRow('fas fa-wave-square', 'Vibration', room.vibration, 'mm/s', 2));
+      sensorList.appendChild(createSensorRow('fas fa-droplet', 'Humidity', room.humidity, '%', 0));
+      sensorList.appendChild(createSensorRow('fas fa-sun', 'Light', room.light, 'lux', 0));
+
+      // assemble card
+      card.appendChild(nameDiv);
+      card.appendChild(sensorList);
+
+      grid.appendChild(card);
+    });
+
+    // optional: you could add a 6th room to emphasize "3+ rooms" – but we already have 5.
+    // if you want to dynamically show more, just push another object to rooms.
+    // uncomment next lines to add an extra room (demonstrating scalability)
+    /*  
+    rooms.push({
+      name: 'Storage',
+      temp: 18.3,
+      pressure: 1016.1,
+      vibration: 0.02,
+      humidity: 39,
+      light: 95
+    });
+    */
+  })();
+</script>
+
+<!-- tiny extra style to make the footer live indicator match -->
+<style>
+  /* consistent with professional palette */
+  .dashboard-footer span i.fa-sync-alt { color: #4682b4; }
+  .dashboard-footer span i.fa-check-circle { color: #409f6f; }
+</style>
+</body>
+</html>
