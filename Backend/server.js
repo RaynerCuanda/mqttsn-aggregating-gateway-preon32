@@ -1,5 +1,6 @@
 // https://console.hivemq.cloud/clusters/b6f0de39dbdb4fbc89413670aabed28a/getting-started/clients/mqtt-js
 
+// mqtt pub -h b6f0de39dbdb4fbc89413670aabed28a.s1.eu.hivemq.cloud -p 8883 -s -u raynercuanda -Rayner123 -t 'my/test/topic' -m 'Hello'
 import express from 'express';
 import cors from 'cors';
 import { Server } from "socket.io";
@@ -30,7 +31,7 @@ var client = mqtt.connect(mqttOptions);
 
 client.on('connect', function () {
     console.log('Connection to Broker Established');
-    client.subscribe('my/test/topic')
+    client.subscribe('9017/temperature');
 });
 
 client.on('error', function (error) {
@@ -38,8 +39,13 @@ client.on('error', function (error) {
 });
 
 client.on('message', function (topic, message) {
-    console.log('Received message:', topic, message.toString());
-    ioSocket.emit('mqtt_data', message.toString());
+    const topicPart = topic.split('/');
+    const roomName = topicPart[0];
+    const payloadType = topicPart[1];
+    const payloadContent = message.toString();
+    ioSocket.emit('mqtt_data', {roomName: roomName, payloadType: payloadType, payloadContent: payloadContent});
+    // console.log(topic)
+    // console.log(payload_content)
 });
 
 server.listen(8080, () => {
