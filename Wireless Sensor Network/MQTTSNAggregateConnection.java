@@ -4,11 +4,9 @@ import java.util.Queue;
 // ANGGAP BROKER PASTI SAMA
 
 public class MQTTSNAggregateConnection implements Runnable {
+    private Queue<MQTTSNPacket> sendTaskQueue = new LinkedList<>(); 
     @Override
     public void run() {
-        Queue<MQTTSNPacket> sendTaskQueue = new LinkedList<>(); 
-
-
         while(true){
             if(sendTaskQueue.peek() != null){
                 MQTTSNPacket packet = sendTaskQueue.poll();
@@ -18,5 +16,9 @@ public class MQTTSNAggregateConnection implements Runnable {
                 // SEND TASK KE BROKER
             }
         }
+    }
+
+    public void addQueue (MQTTSNPacket x){
+        sendTaskQueue.add(x);
     }
 }

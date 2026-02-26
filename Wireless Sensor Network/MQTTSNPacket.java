@@ -26,10 +26,10 @@ public class MQTTSNPacket {
 
     private static final int keepAliveTime = 300; // seconds
 
-    // private static final byte flags_topicIdType_normal      = (byte) 0x00;
-    // private static final byte flags_topicIdType_pre         = (byte) 0x01;
-    // private static final byte flags_topicIdType_short       = (byte) 0x02;
-    // private static final byte flags_topicIdType_reserved    = (byte) 0x03; 
+    private static final byte flags_topicIdType_normal      = (byte) 0x00;
+    private static final byte flags_topicIdType_pre         = (byte) 0x01;
+    private static final byte flags_topicIdType_short       = (byte) 0x02;
+    private static final byte flags_topicIdType_reserved    = (byte) 0x03; 
     private static final byte flags_cleanSession            = (byte) 0x04; 
     private static final byte flags_will                    = (byte) 0x08; 
     private static final byte flags_retain                  = (byte) 0x10; 
@@ -192,9 +192,16 @@ public class MQTTSNPacket {
             flags |= flags_retain;
         }
 
-        if (topicIdType<=3){
-            byte tempTopicIdType = (byte) topicIdType;
-            flags |= tempTopicIdType;
+        if (topicIdType<=3 && topicIdType>=0){
+            if (topicIdType == 0){
+                flags |= flags_topicIdType_normal;
+            } else if (topicIdType == 1){
+                flags |= flags_topicIdType_pre;
+            } else if (topicIdType == 2){
+                flags |= flags_topicIdType_short;
+            } else {
+                flags |= flags_topicIdType_reserved;
+            }
         } else{
             throw new IllegalArgumentException("Invalid topicIdType");
         }
@@ -248,13 +255,20 @@ public class MQTTSNPacket {
             flags |= flags_QoS_min1;
         }
         
-        if (topicIdType<=3){
-            byte tempTopicIdType = (byte) topicIdType;
-            flags |= tempTopicIdType;
+        if (topicIdType<=3 && topicIdType>=0){
+            if (topicIdType == 0){
+                flags |= flags_topicIdType_normal;
+            } else if (topicIdType == 1){
+                flags |= flags_topicIdType_pre;
+            } else if (topicIdType == 2){
+                flags |= flags_topicIdType_short;
+            } else {
+                flags |= flags_topicIdType_reserved;
+            }
         } else{
             throw new IllegalArgumentException("Invalid topicIdType");
         }
-        this.msgVariablePart[0] = flags; // TO DO: FLAGS
+        this.msgVariablePart[0] = flags; 
         this.msgVariablePart[1] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
         this.msgVariablePart[2] = (byte) (msgId & 0xFF);        // Low Byte (LSB)
         this.msgVariablePart[3] = (byte) ((topicId >> 8) & 0xFF);
@@ -264,7 +278,7 @@ public class MQTTSNPacket {
     public void setSUBSCRIBE(boolean dup, int qos, int topicIdType, int msgId, String topicName){
         int headerLength = 1 + 1; // Length (0), MsgType (1)
         byte[] topicNameBytes = topicName.getBytes();
-        int msgVariablePartLength = 1 + 2 + topicName.length() ; // flags (0), msgId (1:2), topicName(3:n)
+        int msgVariablePartLength = 1 + 2 + topicNameBytes.length ; // flags (0), msgId (1:2), topicName(3:n)
         
         this.msgHeader = new byte[headerLength];
         this.msgVariablePart = new byte[msgVariablePartLength];
