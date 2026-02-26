@@ -26,18 +26,18 @@ public class MQTTSNPacket {
 
     private static final int keepAliveTime = 300; // seconds
 
-    private static final byte flags_topicIdType_normal = 0x00
-    private static final byte flags_topicIdType_pre = 0x02
-    private static final byte flags_topicIdType_short =  0x04
-    private static final byte flags_topicIdType_reserved = 0x06 
-    private static final byte flags_cleanSession = 0x01; 
-    private static final byte flags_will = 0x04; 
-    private static final byte flags_retain = 0x08; 
-    private static final byte flags_QoS_0 = 0x00;
-    private static final byte flags_QoS_1 = 0x10;
-    private static final byte flags_QoS_2 = 0x20;
-    private static final byte flags_QoS_min1 = 0x30;
-    private static final byte flags_DUP = 0x40;
+    // private static final byte flags_topicIdType_normal      = (byte) 0x00;
+    // private static final byte flags_topicIdType_pre         = (byte) 0x01;
+    // private static final byte flags_topicIdType_short       = (byte) 0x02;
+    // private static final byte flags_topicIdType_reserved    = (byte) 0x03; 
+    private static final byte flags_cleanSession            = (byte) 0x04; 
+    private static final byte flags_will                    = (byte) 0x08; 
+    private static final byte flags_retain                  = (byte) 0x10; 
+    private static final byte flags_QoS_0                   = (byte) 0x00;
+    private static final byte flags_QoS_1                   = (byte) 0x20;
+    private static final byte flags_QoS_2                   = (byte) 0x40;
+    private static final byte flags_QoS_min1                = (byte) 0x60;
+    private static final byte flags_DUP                     = (byte) 0x80;
 
     byte[] msgHeader;
     byte[] msgVariablePart;
