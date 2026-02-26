@@ -1,5 +1,37 @@
 MQTTSNPacket --> Learn about flags, bit manipulation
 
-Frontend --> Learn how to use react
 
-Backend --> Learn how to connect to broker, and backend framework
+
+Flags 1 byte -> Dup, QoS, Retain, Will, CleanSession, TopicIdType
+    DUP : 0, 1
+    QoS :
+        0b00 (QoS 0), 
+        0b01 (QoS 1), 
+        0b10 (QoS 2), 
+        0b11 (QoS -1)
+    Retain -> ? 
+    CleanSession -> ? 
+    TopicIdType:
+        0b00 (normal topic id), 
+        0b01 (a pre-defined topic id), 
+        0b10 (short topic name), 
+        0b11 (reserved)
+GwAdd -> Tergantung network (802.15.4 menggunakan 2 byte) 
+GwId -> 1 byte
+MsgId -> 2 byte
+ProtocolId: Protocol Version 0x01 : (1 byte)  
+Radius: 1 byte (0x00: broadcast, sisanya sesuai value byte)
+ReturnCode: 1 byte
+    0x00 (Accepted)
+    0x01 (Rejected: Congestion)
+    0x02 (Rejected: invalidTopicId)
+    0x03 (Rejected: Not Supported)
+    0x04-0xFF (reserved)
+TopicID: 2 byte -> nilai topik id (0x0000 dan 0xFFFF TIDAK digunakan)
+TopicName: String (n bytes)
+WillMsg: String (n bytes)
+WillTopic: String (n bytes)
+
+Frontend --> Fix ui
+
+Backend --> 
