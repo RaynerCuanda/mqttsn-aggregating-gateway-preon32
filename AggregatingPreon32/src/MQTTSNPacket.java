@@ -1,15 +1,18 @@
 // TO DO: IMPORTANT! LEARN HOW TO PACK SEVERAL MENU to 1 BYTE  (BIT MANIPULATION)
 // Asumsi: Header selalu 1 byte.
 public class MQTTSNPacket {
-
-    public static final byte ADVERTISE = 0x00; // Done Testing
+    
+    //	Used by Node Sensor
     public static final byte SEARCHGW = 0x01; //Done Testing
-    public static final byte GWINFO = 0x02; // Done Testing
-    public static final byte CONNECT = 0x04; // Done, not yet test
-    public static final byte CONNACK = 0x05; // Done Testing
+    public static final byte CONNECT = 0x04; // Done, not yet test\
     public static final byte REGISTER = 0x0A; // Done, not yet test
-    public static final byte REGACK = 0x0B; // TO DO: NOT YET
     public static final byte PUBLISH = 0x0C; // Done, not yet test
+    
+    //	Used by Gateway
+    public static final byte ADVERTISE = 0x00; // Done Testing
+    public static final byte GWINFO = 0x02; // Done Testing
+    public static final byte CONNACK = 0x05; // Done Testing
+    public static final byte REGACK = 0x0B; // TO DO: NOT YET
     public static final byte PUBACK = 0x0D; // Done, not yet test
 
     // Tiga ini untuk QoS level 2
@@ -17,13 +20,13 @@ public class MQTTSNPacket {
     // public static final byte PUBREL = 0x0F;
     // public static final byte PUBCOMP = 0x10;
 
-    public static final byte SUBSCRIBE = 0x12; // Done, not yet test
-    public static final byte SUBACK = 0x13; // Done, not yet test
+//    public static final byte SUBSCRIBE = 0x12; // Done, not yet test
+//    public static final byte SUBACK = 0x13; // Done, not yet test
     // public static final byte UNSUBSCRIBE = 0x14;
     // public static final byte UNSUBACK = 0x15;
     // public static final byte PINGREQ = 0x16;
     // public static final byte PINGRESP = 0x17;
-    public static final byte DISCONNECT = 0x18;
+//    public static final byte DISCONNECT = 0x18;
 
     private static final int keepAliveTime = 300; // seconds
 
@@ -162,7 +165,7 @@ public class MQTTSNPacket {
         this.msgVariablePart[1] = (byte) (topicId & 0xFF);        // Low Byte (LSB) 
         this.msgVariablePart[2] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
         this.msgVariablePart[3] = (byte) (msgId & 0xFF);        // Low Byte (LSB) 
-        System.arraycopy(topicNameBytes, 0, msgVariablePart, 4, topicNameBytes.length);   
+        System.arraycopy(topicNameBytes,  0, msgVariablePart, 4, topicNameBytes.length);   
     }
 
     public void setPUBLISH(boolean dup, int qos, boolean retain, int topicIdType, int topicId, int msgId, String data) {
