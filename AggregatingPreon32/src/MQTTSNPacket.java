@@ -4,7 +4,7 @@ public class MQTTSNPacket {
     
     //	Used by Node Sensor
     public static final byte SEARCHGW = 0x01; //Done Testing
-    public static final byte CONNECT = 0x04; // Done, not yet test\
+    public static final byte CONNECT = 0x04; // Done, not yet test
     public static final byte REGISTER = 0x0A; // Done, not yet test
     public static final byte PUBLISH = 0x0C; // Done, not yet test
     
@@ -12,21 +12,21 @@ public class MQTTSNPacket {
     public static final byte ADVERTISE = 0x00; // Done Testing
     public static final byte GWINFO = 0x02; // Done Testing
     public static final byte CONNACK = 0x05; // Done Testing
-    public static final byte REGACK = 0x0B; // TO DO: NOT YET
-    public static final byte PUBACK = 0x0D; // Done, not yet test
+    public static final byte REGACK = 0x0B; // Done, not yet test
+    public static final byte PUBACK = 0x0D; // Done, not yet test !Delete this?
 
     // Tiga ini untuk QoS level 2
     // public static final byte PUBREC = 0x0E;
     // public static final byte PUBREL = 0x0F;
     // public static final byte PUBCOMP = 0x10;
 
-//    public static final byte SUBSCRIBE = 0x12; // Done, not yet test
-//    public static final byte SUBACK = 0x13; // Done, not yet test
+   public static final byte SUBSCRIBE = 0x12; // Done, not yet test. !Delete this?
+   public static final byte SUBACK = 0x13; // Done, not yet test !Delete this?
     // public static final byte UNSUBSCRIBE = 0x14;
     // public static final byte UNSUBACK = 0x15;
     // public static final byte PINGREQ = 0x16;
     // public static final byte PINGRESP = 0x17;
-//    public static final byte DISCONNECT = 0x18;
+    // public static final byte DISCONNECT = 0x18;
 
     private static final int keepAliveTime = 300; // seconds
 
@@ -55,6 +55,14 @@ public class MQTTSNPacket {
 
     public byte[] getMsgVariablePart(){
         return this.msgVariablePart;
+    }
+
+    public byte getMsgType(){
+        if (this.msgHeader[0] == 0x01){
+            return msgHeader[3]; 
+        } else{
+            return msgHeader[1];
+        }
     }
 
     public void setADVERTISE(int gwId) {
@@ -166,6 +174,23 @@ public class MQTTSNPacket {
         this.msgVariablePart[2] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
         this.msgVariablePart[3] = (byte) (msgId & 0xFF);        // Low Byte (LSB) 
         System.arraycopy(topicNameBytes,  0, msgVariablePart, 4, topicNameBytes.length);   
+    }
+
+    public void setREGACK(int topicId, int msgId, int returnCode) {
+        int headerLength = 1 + 1; // Length (0), MsgType (1)
+        int msgVariablePartLength = 2 + 2 + 1; //topicId (0:1), MsgId (2:3), returnCode(4)
+        
+        this.msgHeader = new byte[headerLength];
+        this.msgVariablePart = new byte[msgVariablePartLength];
+        
+        this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
+        this.msgHeader[1] = REGACK;
+
+        this.msgVariablePart[0] = (byte) ((topicId >> 8) & 0xFF); // High Byte (MSB)
+        this.msgVariablePart[1] = (byte) (topicId & 0xFF);        // Low Byte (LSB) 
+        this.msgVariablePart[2] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
+        this.msgVariablePart[3] = (byte) (msgId & 0xFF);        // Low Byte (LSB) 
+        this.msgVariablePart[4] = (byte) returnCode;
     }
 
     public void setPUBLISH(boolean dup, int qos, boolean retain, int topicIdType, int topicId, int msgId, String data) {
@@ -357,5 +382,21 @@ public class MQTTSNPacket {
         System.arraycopy(header, 0, totalPacket, 0, headerLength);  
         System.arraycopy(varPart, 0, totalPacket, headerLength, varPartLength);  
         return totalPacket;
+    }
+    
+    public void toMQTTSN(byte[] packet){
+        int headerLength; 
+        int msgVariablePartLength; 
+        if (packet[0] == 0x01){
+            headerLength = 4; // 0x01, panjang > 128, sama tipe pesan (3)
+        } else {
+            headerLength = 2; // Normal
+        }
+        msgVariablePartLength = packet.length - headerLength;
+        this.msgHeader = new byte[headerLength];
+        this.msgVariablePart = new byte[msgVariablePartLength];
+            
+        System.arraycopy(packet, 0, this.msgHeader, 0, headerLength);  
+        System.arraycopy(packet, headerLength, this.msgVariablePart, 0, msgVariablePartLength);  
     }
 }

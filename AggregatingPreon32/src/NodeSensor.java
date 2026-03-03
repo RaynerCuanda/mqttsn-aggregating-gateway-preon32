@@ -1,44 +1,50 @@
 // ASUMSI: PASTI MENGGUNAKAN TOPIK ID, TIDAK ADA SHORT TOPIC NAME
+// NODE SENSOR HANYA BISA TERKONEKSI DENGAN 1 GATEWAY PADA 1 SAAT
+// MEMUNGKINKAN UNTUK GATEWAY TERGANTI DITENGGAH KARENA TIBA-TIBA MENDAPATKAN PESAN GWINFO.
+// ATAU MUNGKIN GWINFO HANYA MENGUBAH KETIKA ISCONNECTED = FALSE?
+// PERUBAHAN PADA LOGIC ADVERTISE, KARENA MUNGKIN GATEWAY GAGAL HANYA SAAT MENGIRIMKAN ADVERTISE.
+// PUBACK TIDAK ADA, jadi QoS Publish pasti 0 
+
 
 import java.io.IOException;
+import java.util.HashMap;
 
-import com.virtenio.driver.device.ADT7410;
-import com.virtenio.driver.device.ADXL345;
-import com.virtenio.driver.device.SHT21;
 import com.virtenio.driver.device.at86rf231.AT86RF231;
 import com.virtenio.driver.device.at86rf231.AT86RF231RadioDriver;
-import com.virtenio.driver.gpio.GPIO;
-import com.virtenio.driver.i2c.NativeI2C;
-import com.virtenio.preon32.examples.common.RadioInit;
 import com.virtenio.preon32.node.Node;
-import com.virtenio.driver.device.at86rf231.AT86RF231;
 import com.virtenio.radio.ieee_802_15_4.Frame;
 import com.virtenio.radio.ieee_802_15_4.FrameIO;
 import com.virtenio.radio.ieee_802_15_4.RadioDriver;
 import com.virtenio.radio.ieee_802_15_4.RadioDriverFrameIO;
-import com.virtenio.vm.Time;
 
 public class NodeSensor {
 	private int COMMON_CHANNEL = 24; // channel
 	private int COMMON_PANID = 0xCAFE; // Personal Area Network ID
 	private String NODE_SENSOR_ID = "node_1"; // IDENTITAS NODE SENSOR
 	private int localAddress = 0x0001; // ALAMAT NODE SENSOR
-	private int BASESTATION_ADDR = 0x00; // ALAMAT TUJUAN BASE STATION (AWAL 0 SEBELUM SEARCHGW)
+	private int BASESTATION_ADDR; // ALAMAT TUJUAN BASE STATION (AWAL BELUM DI ISI NILAI SEBELUM SEARCHGW)
 	private int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
-
+	
+	private long timeLastReceive;
+	private long durationConnectionTime;
+	private long registerSentTime;
+	private boolean isConnected = false;
+	private HashMap<Integer, MQTTSNPacket> msgIDHashMap = new HashMap<Integer, MQTTSNPacket>();
+	private int registerMsgId = 0;
+	private long REGISTER_TIMEOUT = 30000;
+	private int sequenceNumber = 1;
 	
 	private AT86RF231 radio;
 	private FrameIO fio;
-	private boolean isConnected = false;
 
-	private String tempTopic = "9017/Temperature";
-	private String humTopic = "9017/Humidity";
-	private String airTopic = "9017/AirPressure";
-	private String accTopic = "9017/Vibration";
-	private int tempTopicId = 0x00;
-	private int humTopicId = 0x00;
-	private int airTopicId = 0x00;
-	private int accTopicId = 0x00;
+	private final String tempTopic = "9017/Temperature";
+	private final String humTopic = "9017/Humidity";
+	private final String airTopic = "9017/AirPressure";
+	private final String accTopic = "9017/Vibration";
+	private int tempTopicId;
+	private int humTopicId;
+	private int airTopicId;
+	private int accTopicId;
 	
     private void setupRadio() {
         try {
@@ -81,17 +87,21 @@ public class NodeSensor {
 				MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 				mqttsnPacket.setSEARCHGW(0x00);
 				send(mqttsnPacket, BROADCAST_ADDRESS);
+				Thread.sleep(5000);
 			// Jika address udah ada, buat koneksi
 			} else if (!isConnected){
 				MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 				mqttsnPacket.setCONNECT(NODE_SENSOR_ID, true, true);
 				send(mqttsnPacket, BASESTATION_ADDR);
+				Thread.sleep(5000);
 			//Jika sudah konek, maka akan selalu sense, terus publish
 			} else if (isConnected){
+				handleGatewayTimeout();
 				handleHumidity(sensor);
 				handlePressure(sensor);
 				handleTemperature(sensor);
 				handleAcceleration(sensor);
+				Thread.sleep(5000);
 			} 
 		}
 	}
@@ -115,9 +125,28 @@ public class NodeSensor {
 	}
 
 	private void handleMessage(Frame frame){
-		//Frame diubah jadi bytes dulu, pisahin msgHeader, cari tipe pesan, sesuain.
-		//BUAT NANTI MENERIMA ADVERTISE, GWINFO, CONNACK, PUBACK, REGACK
-		// id_topic diisi sama pesan ACK yang diterima.
+		timeLastReceive = System.currentTimeMillis();
+
+		byte[] tempPayload = frame.getPayload();
+		MQTTSNPacket packet = new MQTTSNPacket();
+		packet.toMQTTSN(tempPayload);
+
+		// http://www.steves-internet-guide.com/mqtt-sn-gateway-advertisement-and-discovery/
+		// Kalau node sensor gagal mendapat advertise dalam 15 menit, artinya udah inactive 
+		if (packet.getMsgType() == 0x00){ //ADVERTISE
+			// !GwID Tidak dipakai karena node sensor hanya dapat terhubung ke 1 gateway. Jadi hanya untuk update last received.
+
+			// Source - https://stackoverflow.com/a/15561697
+			durationConnectionTime = ((packet.getMsgVariablePart()[1] & 0xFF) << 8) | (packet.getMsgVariablePart()[2] & 0xFF);
+		} else if (packet.getMsgType() == 0x02){ // GWINFO
+			BASESTATION_ADDR = (int)frame.getSrcAddr(); 
+		} else if (packet.getMsgType() == 0x05){ // CONNACK
+			handleCONNACK(packet.getMsgVariablePart()[0]);
+		} else if (packet.getMsgType() == 0x0B){ // REGACK
+			handleREGACK(packet);
+		// } else if (packet.getMsgType() == 0x0D){ // PUBACK
+			// handlePUBACK(packet);
+		}			
 	}
 	
 	public static void main(String [] args ) throws Exception
@@ -126,11 +155,80 @@ public class NodeSensor {
 		ns.run();
 	}
 	
+	private void handleREGACK(MQTTSNPacket mqttsnPacket){
+	
+		int topicId = ((mqttsnPacket.getMsgVariablePart()[0] & 0xFF) << 8) | (mqttsnPacket.getMsgVariablePart()[1] & 0xFF); // Topic Id: 0,1
+		int messageId = ((mqttsnPacket.getMsgVariablePart()[2] & 0xFF) << 8) | (mqttsnPacket.getMsgVariablePart()[3] & 0xFF); // Message Id: 2,3
+		if (messageId != registerMsgId){ // Artinya messageID yang sebelumnya udah di hapus, jadi ga usah di proses karena udah ga ada di Map.
+			return;
+		}
+		switch (mqttsnPacket.getMsgVariablePart()[4]){
+			case 0x00:
+				byte[] oldPacket = msgIDHashMap.remove(messageId).getMsgVariablePart();
+				byte[] topic_name = new byte[oldPacket.length-4];
+				System.arraycopy(oldPacket,  4, topic_name, 0, oldPacket.length-4); // Copy topic name
+				String topicNameStr = new String(topic_name);
+
+				switch (topicNameStr){
+					case tempTopic:
+						tempTopicId = topicId;
+						break;
+					case airTopic:
+						airTopicId = topicId;
+						break;
+					case humTopic:
+						humTopicId = topicId;
+						break;
+					case accTopic:
+						accTopicId = topicId;
+						break;
+				}
+				break;
+			case 0x01:
+				System.out.println("Gateway REJECTED: CONGESTION");
+				msgIDHashMap.remove(messageId);
+				break;
+			case 0x02:
+				System.out.println("Gateway REJECTED: INVALID TOPIC ID");
+				msgIDHashMap.remove(messageId);
+				break;
+			case 0x03:
+				System.out.println("Gateway REJECTED: not SUPPORTED");
+				msgIDHashMap.remove(messageId);
+				break;
+			}
+		registerMsgId = 0;
+	}
+
+	private void handleCONNACK(byte returnCode){
+		switch (returnCode){
+			case 0x00:
+				isConnected = true;
+				break;
+			case 0x01:
+				System.out.println("Gateway REJECTED: CONGESTION");
+				this.isConnected = false;
+				break;
+			case 0x02:
+				System.out.println("Gateway REJECTED: INVALID TOPIC ID");
+				this.isConnected = false;
+				break;
+			case 0x03:
+				System.out.println("Gateway REJECTED: not SUPPORTED");
+				this.isConnected = false;
+				break;
+		}
+	}
+
+	private void handleGatewayTimeout(){
+		if ((System.currentTimeMillis() - timeLastReceive) / 1000 > durationConnectionTime){
+			isConnected = false;
+		}	
+	}
+
 	private void handleHumidity(Preon32Sensor sensor){
 		if (humTopicId == 0) {
-			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-			mqttsnPacket.setREGISTER(0, 0x00000000000000000000000, humTopic); //topicId pasti 0, kalau di kirim Client (Node sensor) 
-			send(mqttsnPacket, BASESTATION_ADDR);
+			handleRegister(humTopic, humTopicId);
 		} else {
 			String payload = sensor.getHumidityValue();
 			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
@@ -141,9 +239,7 @@ public class NodeSensor {
 
 	private void handleAcceleration(Preon32Sensor sensor){
 		if (accTopicId == 0) {
-			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-			mqttsnPacket.setREGISTER(0, 0x00000000000000000000000, accTopic); //topicId pasti 0, kalau di kirim Client (Node sensor) 
-			send(mqttsnPacket, BASESTATION_ADDR);
+			handleRegister(accTopic, accTopicId);
 		} else {
 			String payload = sensor.getAccelValue();
 			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
@@ -154,9 +250,7 @@ public class NodeSensor {
 
 	private void handleTemperature(Preon32Sensor sensor){
 		if (tempTopicId == 0) {
-			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-			mqttsnPacket.setREGISTER(0, 0x00000000000000000000000, tempTopic); //topicId pasti 0, kalau di kirim Client (Node sensor) 
-			send(mqttsnPacket, BASESTATION_ADDR);
+			handleRegister(tempTopic, tempTopicId);
 		} else {
 			String payload = sensor.getTemperatureValue();
 			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
@@ -167,9 +261,7 @@ public class NodeSensor {
 
 	private void handlePressure(Preon32Sensor sensor){
 		if (airTopicId == 0) {
-			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-			mqttsnPacket.setREGISTER(0, 0x00000000000000000000000, airTopic); //topicId pasti 0, kalau di kirim Client (Node sensor) 
-			send(mqttsnPacket, BASESTATION_ADDR);
+			handleRegister(airTopic, airTopicId);
 		} else {
 			String payload = sensor.getPressureValue();
 			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
@@ -178,5 +270,23 @@ public class NodeSensor {
 		}
 	}
 	
+	private void handleRegister(String topicName, int topicId){
+		if (topicId == 0){
+			if (registerMsgId == 0){
+				MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
+				mqttsnPacket.setREGISTER(0, sequenceNumber, topicName); //topicId pasti 0, kalau di kirim Client (Node sensor) 
+				msgIDHashMap.put(sequenceNumber, mqttsnPacket);
+				registerMsgId = sequenceNumber;
+				send(mqttsnPacket, BASESTATION_ADDR);
+				registerSentTime = System.currentTimeMillis();
+				sequenceNumber++;
+			} else{
+				if (System.currentTimeMillis() - registerSentTime > REGISTER_TIMEOUT){
+					msgIDHashMap.remove(registerMsgId);
+					registerMsgId = 0;
+				}
+			}
+		}
+	}
 }
 
