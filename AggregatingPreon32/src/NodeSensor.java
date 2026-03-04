@@ -29,7 +29,7 @@ public class NodeSensor {
 	private long durationConnectionTime;
 	private long registerSentTime;
 	private boolean isConnected = false;
-	private HashMap<Integer, MQTTSNPacket> msgIDHashMap = new HashMap<Integer, MQTTSNPacket>();
+	private HashMap<Integer, MQTTSNPacket> RegAckHashMap = new HashMap<Integer, MQTTSNPacket>();
 	private int registerMsgId = 0;
 	private long REGISTER_TIMEOUT = 30000;
 	private int sequenceNumber = 1;
@@ -164,7 +164,7 @@ public class NodeSensor {
 		}
 		switch (mqttsnPacket.getMsgVariablePart()[4]){
 			case 0x00:
-				byte[] oldPacket = msgIDHashMap.remove(messageId).getMsgVariablePart();
+				byte[] oldPacket = RegAckHashMap.remove(messageId).getMsgVariablePart();
 				byte[] topic_name = new byte[oldPacket.length-4];
 				System.arraycopy(oldPacket,  4, topic_name, 0, oldPacket.length-4); // Copy topic name
 				String topicNameStr = new String(topic_name);
@@ -186,15 +186,15 @@ public class NodeSensor {
 				break;
 			case 0x01:
 				System.out.println("Gateway REJECTED: CONGESTION");
-				msgIDHashMap.remove(messageId);
+				RegAckHashMap.remove(messageId);
 				break;
 			case 0x02:
 				System.out.println("Gateway REJECTED: INVALID TOPIC ID");
-				msgIDHashMap.remove(messageId);
+				RegAckHashMap.remove(messageId);
 				break;
 			case 0x03:
 				System.out.println("Gateway REJECTED: not SUPPORTED");
-				msgIDHashMap.remove(messageId);
+				RegAckHashMap.remove(messageId);
 				break;
 			}
 		registerMsgId = 0;
@@ -275,14 +275,14 @@ public class NodeSensor {
 			if (registerMsgId == 0){
 				MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 				mqttsnPacket.setREGISTER(0, sequenceNumber, topicName); //topicId pasti 0, kalau di kirim Client (Node sensor) 
-				msgIDHashMap.put(sequenceNumber, mqttsnPacket);
+				RegAckHashMap.put(sequenceNumber, mqttsnPacket);
 				registerMsgId = sequenceNumber;
 				send(mqttsnPacket, BASESTATION_ADDR);
 				registerSentTime = System.currentTimeMillis();
 				sequenceNumber++;
 			} else{
 				if (System.currentTimeMillis() - registerSentTime > REGISTER_TIMEOUT){
-					msgIDHashMap.remove(registerMsgId);
+					RegAckHashMap.remove(registerMsgId);
 					registerMsgId = 0;
 				}
 			}
