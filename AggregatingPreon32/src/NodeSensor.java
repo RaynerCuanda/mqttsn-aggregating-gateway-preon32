@@ -21,7 +21,7 @@ public class NodeSensor {
 	private int COMMON_CHANNEL = 24; // channel
 	private int COMMON_PANID = 0xCAFE; // Personal Area Network ID
 	private String NODE_SENSOR_ID = "node_1"; // IDENTITAS NODE SENSOR
-	private int localAddress = 0x0001; // ALAMAT NODE SENSOR
+	private int localAddress = 0x0002; // ALAMAT NODE SENSOR
 	private int BASESTATION_ADDR; // ALAMAT TUJUAN BASE STATION (AWAL BELUM DI ISI NILAI SEBELUM SEARCHGW)
 	private int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
 	
@@ -46,6 +46,12 @@ public class NodeSensor {
 	private int airTopicId;
 	private int accTopicId;
 	
+	public static void main(String [] args ) throws Exception
+	{
+		NodeSensor ns = new NodeSensor();
+		ns.run();
+	}
+
     private void setupRadio() {
         try {
             radio = Node.getInstance().getTransceiver();
@@ -106,7 +112,7 @@ public class NodeSensor {
 		}
 	}
 
-	public void send(MQTTSNPacket packet, int destinationAddresss){
+	private void send(MQTTSNPacket packet, int destinationAddresss){
 		byte[] packetToSend = packet.toBytes();
         int frameControl = Frame.TYPE_DATA | Frame.ACK_REQUEST | Frame.DST_ADDR_16
                 | Frame.INTRA_PAN | Frame.SRC_ADDR_16;
@@ -148,12 +154,7 @@ public class NodeSensor {
 			// handlePUBACK(packet);
 		}			
 	}
-	
-	public static void main(String [] args ) throws Exception
-	{
-		NodeSensor ns = new NodeSensor();
-		ns.run();
-	}
+
 	
 	private void handleREGACK(MQTTSNPacket mqttsnPacket){
 	
