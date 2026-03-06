@@ -22,7 +22,7 @@ public class GatewayPreon32{
 	// private final int COMMON_CHANNEL = 24; // channel
 	private  int COMMON_PANID = 0xCAFE; // Personal Area Network ID
 	// private  String NODE_SENSOR_ID = "gateway"; // IDENTITAS NODE SENSOR
-	private  int LOCAL_ADDRESS = 0x0001; // ALAMAT FORWARDER;
+	private  int LOCAL_ADDRESS = 0x0001; // ALAMAT GATEWAY;
 	// private int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
 
 	public static void main(String [] args ) throws Exception

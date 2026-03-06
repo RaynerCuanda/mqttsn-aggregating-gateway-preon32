@@ -18,7 +18,7 @@ import com.virtenio.radio.ieee_802_15_4.RadioDriver;
 import com.virtenio.radio.ieee_802_15_4.RadioDriverFrameIO;
 
 public class NodeSensor {
-	private int COMMON_CHANNEL = 24; // channel
+	// private int COMMON_CHANNEL = 24; // channel
 	private int COMMON_PANID = 0xCAFE; // Personal Area Network ID
 	private String NODE_SENSOR_ID = "node_1"; // IDENTITAS NODE SENSOR
 	private int localAddress = 0x0002; // ALAMAT NODE SENSOR
@@ -136,23 +136,22 @@ public class NodeSensor {
 		byte[] tempPayload = frame.getPayload();
 		MQTTSNPacket packet = new MQTTSNPacket();
 		packet.toMQTTSN(tempPayload);
-
-		// http://www.steves-internet-guide.com/mqtt-sn-gateway-advertisement-and-discovery/
-		// Kalau node sensor gagal mendapat advertise dalam 15 menit, artinya udah inactive 
-		if (packet.getMsgType() == 0x00){ //ADVERTISE
-			// !GwID Tidak dipakai karena node sensor hanya dapat terhubung ke 1 gateway. Jadi hanya untuk update last received.
-
-			// Source - https://stackoverflow.com/a/15561697
-			durationConnectionTime = ((packet.getMsgVariablePart()[1] & 0xFF) << 8) | (packet.getMsgVariablePart()[2] & 0xFF);
-		} else if (packet.getMsgType() == 0x02){ // GWINFO
-			BASESTATION_ADDR = (int)frame.getSrcAddr(); 
-		} else if (packet.getMsgType() == 0x05){ // CONNACK
-			handleCONNACK(packet.getMsgVariablePart()[0]);
-		} else if (packet.getMsgType() == 0x0B){ // REGACK
-			handleREGACK(packet);
-		// } else if (packet.getMsgType() == 0x0D){ // PUBACK
-			// handlePUBACK(packet);
-		}			
+		switch(packet.getMsgType()){
+			case MQTTSNPacket.ADVERTISE:
+				// !GwID Tidak dipakai karena node sensor hanya dapat terhubung ke 1 gateway. Jadi hanya untuk update last received.
+				// Source - https://stackoverflow.com/a/15561697
+				durationConnectionTime = ((packet.getMsgVariablePart()[1] & 0xFF) << 8) | (packet.getMsgVariablePart()[2] & 0xFF);
+				break;
+			case MQTTSNPacket.GWINFO:
+				BASESTATION_ADDR = (int)frame.getSrcAddr();
+				break;
+			case MQTTSNPacket.CONNACK:
+				handleCONNACK(packet.getMsgVariablePart()[0]);
+				break;
+			case MQTTSNPacket.REGACK:
+				handleREGACK(packet);
+				break;
+		}
 	}
 
 	
