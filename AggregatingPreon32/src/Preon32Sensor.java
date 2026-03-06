@@ -37,13 +37,13 @@ public class Preon32Sensor {
 
             humiditySensor = new SHT21(i2c);
             humiditySensor.open();
-            // humiditySensor.setResolution(SHT21.RESOLUTION_RH12_T14); //Ini ga harus?
+            humiditySensor.setResolution(SHT21.RESOLUTION_RH12_T14);
 
             accelerationSensor = new ADXL345(spi, chipSelectPin);
             accelerationSensor.open();
-            // accelerationSensor.setDataFormat(ADXL345.DATA_FORMAT_RANGE_2G);
-            // accelerationSensor.setDataRate(ADXL345.DATA_RATE_3200HZ);
-            // accelerationSensor.setPowerControl(ADXL345.POWER_CONTROL_MEASURE);
+            accelerationSensor.setDataFormat(ADXL345.DATA_FORMAT_RANGE_2G);
+            accelerationSensor.setDataRate(ADXL345.DATA_RATE_3200HZ);
+            accelerationSensor.setPowerControl(ADXL345.POWER_CONTROL_MEASURE);
 
             pressureSensor = new MPL115A2(i2c, resetPin, shutDownPin);
             // pressureSensor = new MPL115A2(i2c, null, null); // Mungkin bisa seperti Temperature?
@@ -106,13 +106,9 @@ public class Preon32Sensor {
 
     private void senseHumidity() {
         try {
-            // humidity conversion
-            Thread.sleep(1000);
             humiditySensor.startRelativeHumidityConversion();
-            Thread.sleep(100);
-            int rawRH = humiditySensor.getRelativeHumidityRaw();
-            float rh = SHT21.convertRawRHToRHw(rawRH);
-            humidityValue = rh;
+            Thread.sleep(SHT21.MAX_HUMIDITY_CONVERSION_TIME_R12);
+            humidityValue = humiditySensor.getRelativeHumidityAboveWater();
         } catch (Exception e) {
             System.out.println("SHT21 error");
         }
