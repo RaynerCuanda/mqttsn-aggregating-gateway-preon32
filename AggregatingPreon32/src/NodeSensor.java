@@ -21,7 +21,7 @@ public class NodeSensor {
 	private int COMMON_CHANNEL = 24; // channel
 	private int COMMON_PANID = 0xCAFE; // Personal Area Network ID
 	private String NODE_SENSOR_ID = "node_1"; // IDENTITAS NODE SENSOR
-	private int localAddress = 0x0001; // ALAMAT NODE SENSOR
+	private int localAddress = 0x0002; // ALAMAT NODE SENSOR
 	private int BASESTATION_ADDR; // ALAMAT TUJUAN BASE STATION (AWAL BELUM DI ISI NILAI SEBELUM SEARCHGW)
 	private int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
 	
@@ -29,7 +29,7 @@ public class NodeSensor {
 	private long durationConnectionTime;
 	private long registerSentTime;
 	private boolean isConnected = false;
-	private HashMap<Integer, MQTTSNPacket> msgIDHashMap = new HashMap<Integer, MQTTSNPacket>();
+	private HashMap<Integer, MQTTSNPacket> RegAckHashMap = new HashMap<Integer, MQTTSNPacket>();
 	private int registerMsgId = 0;
 	private long REGISTER_TIMEOUT = 30000;
 	private int sequenceNumber = 1;
@@ -46,6 +46,12 @@ public class NodeSensor {
 	private int airTopicId;
 	private int accTopicId;
 	
+	public static void main(String [] args ) throws Exception
+	{
+		NodeSensor ns = new NodeSensor();
+		ns.run();
+	}
+
     private void setupRadio() {
         try {
             radio = Node.getInstance().getTransceiver();
@@ -106,7 +112,7 @@ public class NodeSensor {
 		}
 	}
 
-	public void send(MQTTSNPacket packet, int destinationAddresss){
+	private void send(MQTTSNPacket packet, int destinationAddresss){
 		byte[] packetToSend = packet.toBytes();
         int frameControl = Frame.TYPE_DATA | Frame.ACK_REQUEST | Frame.DST_ADDR_16
                 | Frame.INTRA_PAN | Frame.SRC_ADDR_16;
@@ -148,12 +154,7 @@ public class NodeSensor {
 			// handlePUBACK(packet);
 		}			
 	}
-	
-	public static void main(String [] args ) throws Exception
-	{
-		NodeSensor ns = new NodeSensor();
-		ns.run();
-	}
+
 	
 	private void handleREGACK(MQTTSNPacket mqttsnPacket){
 	
@@ -164,7 +165,7 @@ public class NodeSensor {
 		}
 		switch (mqttsnPacket.getMsgVariablePart()[4]){
 			case 0x00:
-				byte[] oldPacket = msgIDHashMap.remove(messageId).getMsgVariablePart();
+				byte[] oldPacket = RegAckHashMap.remove(messageId).getMsgVariablePart();
 				byte[] topic_name = new byte[oldPacket.length-4];
 				System.arraycopy(oldPacket,  4, topic_name, 0, oldPacket.length-4); // Copy topic name
 				String topicNameStr = new String(topic_name);
@@ -186,15 +187,15 @@ public class NodeSensor {
 				break;
 			case 0x01:
 				System.out.println("Gateway REJECTED: CONGESTION");
-				msgIDHashMap.remove(messageId);
+				RegAckHashMap.remove(messageId);
 				break;
 			case 0x02:
 				System.out.println("Gateway REJECTED: INVALID TOPIC ID");
-				msgIDHashMap.remove(messageId);
+				RegAckHashMap.remove(messageId);
 				break;
 			case 0x03:
 				System.out.println("Gateway REJECTED: not SUPPORTED");
-				msgIDHashMap.remove(messageId);
+				RegAckHashMap.remove(messageId);
 				break;
 			}
 		registerMsgId = 0;
@@ -275,14 +276,14 @@ public class NodeSensor {
 			if (registerMsgId == 0){
 				MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 				mqttsnPacket.setREGISTER(0, sequenceNumber, topicName); //topicId pasti 0, kalau di kirim Client (Node sensor) 
-				msgIDHashMap.put(sequenceNumber, mqttsnPacket);
+				RegAckHashMap.put(sequenceNumber, mqttsnPacket);
 				registerMsgId = sequenceNumber;
 				send(mqttsnPacket, BASESTATION_ADDR);
 				registerSentTime = System.currentTimeMillis();
 				sequenceNumber++;
 			} else{
 				if (System.currentTimeMillis() - registerSentTime > REGISTER_TIMEOUT){
-					msgIDHashMap.remove(registerMsgId);
+					RegAckHashMap.remove(registerMsgId);
 					registerMsgId = 0;
 				}
 			}

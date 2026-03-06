@@ -15,6 +15,9 @@ public class MQTTSNPacket {
     public static final byte REGACK = 0x0B; // Done, not yet test
     public static final byte PUBACK = 0x0D; // Done, not yet test !Delete this?
 
+    // Used by Forwarder
+    public static final byte ENCAPSULATED_MESSAGE = (byte)0xFE;
+
     // Tiga ini untuk QoS level 2
     // public static final byte PUBREC = 0x0E;
     // public static final byte PUBREL = 0x0F;
@@ -28,7 +31,7 @@ public class MQTTSNPacket {
     // public static final byte PINGRESP = 0x17;
     // public static final byte DISCONNECT = 0x18;
 
-    private static final int keepAliveTime = 300; // seconds
+    private int keepAliveTime = 300; // seconds
 
     private static final byte flags_topicIdType_normal      = (byte) 0x00;
     private static final byte flags_topicIdType_pre         = (byte) 0x01;
@@ -369,6 +372,21 @@ public class MQTTSNPacket {
         this.msgVariablePart[3] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
         this.msgVariablePart[4] = (byte) (msgId & 0xFF);        // Low Byte (LSB)
         this.msgVariablePart[5] = (byte) returnCode;
+    }
+
+    public static byte[] toEncapsulatedMessage(int wirelessNodeId, byte[] MQTTSNMessage){
+        int length = 1 + 1 + 1 + 2; // Panjang pesan Enkapsulasi sampai WirelessNdoeID (Sesuai spesifikasi)
+        byte msgType = ENCAPSULATED_MESSAGE;
+        byte ctrl = 0x00; // !TO DO: What is this..
+        
+        int totalLength = length + MQTTSNMessage.length;
+        byte[] EncapsulatedMessage = new byte[totalLength];
+        EncapsulatedMessage[0] = (byte)length;
+        EncapsulatedMessage[1] = msgType;
+        EncapsulatedMessage[2] = ctrl;
+        System.arraycopy(MQTTSNMessage, 0, EncapsulatedMessage, 3, MQTTSNMessage.length);
+
+        return EncapsulatedMessage;
     }
 
     public byte[] toBytes(){
