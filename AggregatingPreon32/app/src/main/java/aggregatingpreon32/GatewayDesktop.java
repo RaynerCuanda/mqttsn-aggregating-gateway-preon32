@@ -1,12 +1,33 @@
+package aggregatingpreon32;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
+
+import com.hivemq.client.mqtt.MqttClient;
+import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
+
+import static com.hivemq.client.mqtt.MqttGlobalPublishFilter.ALL;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import io.github.cdimascio.dotenv.Dotenv;
+
 
 public class GatewayDesktop {
     private int gatewayId = 0x0001;
     private String gatewayAddress = "0x0001";
     private HashMap<String, Integer> nodeSensorMap;
     private HashMap<Integer, String> topicMap;
+    Queue<MQTTSNPacket> sendTaskQueue = new LinkedList<>(); 
+    Mqtt5BlockingClient client;
+
+    public static void main(String[] args) {
+        new GatewayDesktop().run();
+    }
+
+    public void run() {
+        runPortReader();
+        initConnectionBroker();
+        sendToBroker();
+    }
 
     private int topicIdIncrement;
 
@@ -18,6 +39,8 @@ public class GatewayDesktop {
         }.start();
     }
 
+
+    // TO DO: ADVERTISE every x minutes.
     private void handleEncapsulatedMessage(byte[] encapsulatedMessage){
         // separate WirelessNodeID and MQTT-SN
         int lenNotMQTTSN = (byte) encapsulatedMessage[0]; // Panjang pesan diluar MQTT-SN
@@ -71,7 +94,7 @@ public class GatewayDesktop {
                 break;
             }
             case MQTTSNPacket.PUBLISH:{
-                
+                sendTaskQueue.add(mqttsnPacket);
                 break;
             }
         }
@@ -81,12 +104,47 @@ public class GatewayDesktop {
 
     }
 
-    private void sendToBroker() {
-        Queue<MQTTSNPacket> sendTaskQueue = new LinkedList<>(); 
+    private void initConnectionBroker(){
+        Dotenv dotenv = Dotenv.load();
+        final String host = dotenv.get("MQTT_HOST");
+        final String username = dotenv.get("MQTT_USER");
+        final String password = dotenv.get("MQTT_PASS");
 
+        client = MqttClient.builder()
+                .useMqttVersion5()
+                .serverHost(host)
+                .serverPort(8883)
+                .sslWithDefaultConfig()
+                .buildBlocking();
+
+        client.connectWith()
+                .simpleAuth()
+                .username(username)
+                .password(UTF_8.encode(password))
+                .applySimpleAuth()
+                .send();
+    }
+
+
+        // TO DO: Check topic Id map 
+    private void sendToBroker() {
         new Thread() {
             public void run() {
-                //
+                while(true){
+                    MQTTSNPacket mqttsnPacket = sendTaskQueue.poll();
+                    
+                    int topicId = ((mqttsnPacket.getMsgVariablePart()[1] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[2] & 0xFF);
+                    int payloadLength = mqttsnPacket.getMsgVariablePart().length-5;
+                    byte[] payloadTemp = new byte[payloadLength];
+                    System.arraycopy(mqttsnPacket.getMsgVariablePart(), 5, payloadTemp, 0, payloadLength);
+
+                    String payload = new String(payloadTemp);
+                    String topicName = topicMap.get(topicId);
+                    client.publishWith()
+                        .topic(topicName)
+                        .payload(UTF_8.encode(payload))
+                        .send();
+                }
             }
         }.start();
     }
