@@ -101,7 +101,7 @@ public class NodeSensor {
 				handlePressure(sensor);
 				handleTemperature(sensor);
 				handleAcceleration(sensor);
-				Thread.sleep(5000);
+				Thread.sleep(200);  
 			} 
 		}
 	}
