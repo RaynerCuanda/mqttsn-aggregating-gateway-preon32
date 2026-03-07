@@ -6,6 +6,7 @@ import com.virtenio.driver.device.at86rf231.AT86RF231RadioDriver;
 import com.virtenio.driver.usart.NativeUSART;
 import com.virtenio.driver.usart.USART;
 import com.virtenio.driver.usart.USARTParams;
+import com.virtenio.preon32.examples.common.USARTConstants;
 import com.virtenio.preon32.node.Node;
 import com.virtenio.radio.ieee_802_15_4.Frame;
 import com.virtenio.radio.ieee_802_15_4.FrameIO;
@@ -50,17 +51,37 @@ public class GatewayPreon32{
 
     private static USART configUSART() {
         int instanceID = 0;
-        USARTParams params = new USARTParams(115200, USART.DATA_BITS_8,
-                USART.STOP_BITS_1, USART.PARITY_NONE);
+        USARTParams params = USARTConstants.PARAMS_115200;
         NativeUSART usart = NativeUSART.getInstance(instanceID);
         try {
             usart.close();
             usart.open(params);
-
             return usart;
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private void runUSARTReceiver() {
+        new Thread() {
+            public void run() {
+                while (true) {
+                    byte[] incomingByte = new byte[128]; // dari USB Port
+
+                    try {
+                        int byteLength = usart.readFully(incomingByte);
+                        
+                        byte[] encapsulatedMessage = new byte[byteLength];
+                        System.arraycopy(incomingByte, 0, encapsulatedMessage, 0, byteLength);
+                        if (encapsulatedMessage[1] == 0xFE){ // Kalo msgType = 0xFE (EncapsulatedMessage)
+                            handleEncapsulatedMessage(encapsulatedMessage);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }.start();
     }
 
     private void setupRadio() {
@@ -91,28 +112,6 @@ public class GatewayPreon32{
         }.start();
     }
 
-    private void runUSARTReceiver() {
-        new Thread() {
-            public void run() {
-                while (true) {
-                    byte[] incomingByte = new byte[128]; // dari USB Port
-
-                    try {
-                        int byteLength = usart.readFully(incomingByte);
-                        
-                        byte[] encapsulatedMessage = new byte[byteLength];
-                        System.arraycopy(incomingByte, 0, encapsulatedMessage, 0, byteLength);
-                        if (encapsulatedMessage[1] == 0xFE){ // Kalo msgType = 0xFE (EncapsulatedMessage)
-                            handleEncapsulatedMessage(encapsulatedMessage);
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }.start();
-    }
-
     private void handleMessageMQTTSN(Frame frame){
         byte[] mqttsnPacket = frame.getPayload();
         int sender = (int) frame.getSrcAddr();
@@ -122,7 +121,6 @@ public class GatewayPreon32{
 
     private void sendToPC(byte[] EncapsulatedMessage){
         try {
-            out.flush();
             byte[] b = new byte[128];
             System.arraycopy(EncapsulatedMessage, 0, b, 0, EncapsulatedMessage.length);
             out.write(b);

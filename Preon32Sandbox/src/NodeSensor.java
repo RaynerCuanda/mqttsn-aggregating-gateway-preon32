@@ -112,7 +112,49 @@ public class NodeSensor {
 		}
 	}
 
-	private void send(MQTTSNPacket packet, int destinationAddresss){
+	private void handleMessage(Frame frame){
+		timeLastReceive = System.currentTimeMillis();
+
+		byte[] tempPayload = frame.getPayload();
+		MQTTSNPacket packet = new MQTTSNPacket();
+		packet.toMQTTSN(tempPayload);
+		switch(packet.getMsgType()){
+			case MQTTSNPacket.ADVERTISE:
+				if (BASESTATION_ADDR == 0x00){
+					BASESTATION_ADDR = (int)frame.getSrcAddr();
+				}
+				if (BASESTATION_ADDR == (int) frame.getSrcAddr()){ // Kalo dapet advertise dari GW yang berbeda, di ignore
+					durationConnectionTime = ((packet.getMsgVariablePart()[1] & 0xFF) << 8) | (packet.getMsgVariablePart()[2] & 0xFF);
+				}
+				break;
+			case MQTTSNPacket.GWINFO:
+				BASESTATION_ADDR = (int)frame.getSrcAddr();
+				break;
+			case MQTTSNPacket.CONNACK:
+				handleCONNACK(packet.getMsgVariablePart()[0]);
+				break;
+			case MQTTSNPacket.REGACK:
+				handleREGACK(packet);
+				break;
+			case MQTTSNPacket.PUBACK:
+				//Return Code 0x02 (TopicId Invalid)
+				if (packet.getMsgVariablePart()[4] == 0x02){ 
+					int topicId = ((packet.getMsgVariablePart()[0] & 0xFF) << 8) | (packet.getMsgVariablePart()[1] & 0xFF);
+					if(tempTopicId == topicId){
+						tempTopicId = 0;
+					} else if(humTopicId == topicId){
+						humTopicId = 0;
+					} else if(airTopicId == topicId){
+						airTopicId = 0;
+					} else if(accTopicId == topicId){
+						accTopicId = 0;	
+					}
+				}
+				break;
+		}
+	}
+
+		private void send(MQTTSNPacket packet, int destinationAddresss){
 		byte[] packetToSend = packet.toBytes();
         int frameControl = Frame.TYPE_DATA | Frame.ACK_REQUEST | Frame.DST_ADDR_16
                 | Frame.INTRA_PAN | Frame.SRC_ADDR_16;
@@ -130,31 +172,6 @@ public class NodeSensor {
         }
 	}
 
-	private void handleMessage(Frame frame){
-		timeLastReceive = System.currentTimeMillis();
-
-		byte[] tempPayload = frame.getPayload();
-		MQTTSNPacket packet = new MQTTSNPacket();
-		packet.toMQTTSN(tempPayload);
-		switch(packet.getMsgType()){
-			case MQTTSNPacket.ADVERTISE:
-				// !GwID Tidak dipakai karena node sensor hanya dapat terhubung ke 1 gateway. Jadi hanya untuk update last received.
-				// Source - https://stackoverflow.com/a/15561697
-				durationConnectionTime = ((packet.getMsgVariablePart()[1] & 0xFF) << 8) | (packet.getMsgVariablePart()[2] & 0xFF);
-				break;
-			case MQTTSNPacket.GWINFO:
-				BASESTATION_ADDR = (int)frame.getSrcAddr();
-				break;
-			case MQTTSNPacket.CONNACK:
-				handleCONNACK(packet.getMsgVariablePart()[0]);
-				break;
-			case MQTTSNPacket.REGACK:
-				handleREGACK(packet);
-				break;
-		}
-	}
-
-	
 	private void handleREGACK(MQTTSNPacket mqttsnPacket){
 	
 		int topicId = ((mqttsnPacket.getMsgVariablePart()[0] & 0xFF) << 8) | (mqttsnPacket.getMsgVariablePart()[1] & 0xFF); // Topic Id: 0,1
