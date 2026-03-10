@@ -24,6 +24,7 @@ dependencies {
     implementation("com.hivemq:hivemq-mqtt-client:1.3.9")
     implementation("io.github.cdimascio:dotenv-java:3.0.0")
     implementation(libs.guava)
+    implementation(fileTree("libs") { include("*.jar")})
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -35,8 +36,8 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = "aggregatingpreon32.GatewayDesktop"
-    // mainClass.set("aggregatingpreon32.GatewayDesktop")
+    // mainClass = "aggregatingpreon32.GatewayDesktop"
+    mainClass.set("aggregatingpreon32.GatewayDesktop")
 }
 
 tasks.named<Test>("test") {

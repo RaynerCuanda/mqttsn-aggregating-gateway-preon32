@@ -4,6 +4,9 @@ import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.virtenio.commander.io.DataConnection;
+import com.virtenio.commander.toolsets.preon32.Preon32Helper;
+
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 
@@ -178,7 +181,7 @@ public class GatewayDesktop {
         client.connectWith()
                 .simpleAuth()
                 .username(username)
-                .password(UTF_8.encode(password))
+                .password(password.getBytes(UTF_8))
                 .applySimpleAuth()
                 .send();
     }
