@@ -35,7 +35,8 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = "aggregatingpreon32.App"
+    mainClass = "aggregatingpreon32.GatewayDesktop"
+    // mainClass.set("aggregatingpreon32.GatewayDesktop")
 }
 
 tasks.named<Test>("test") {

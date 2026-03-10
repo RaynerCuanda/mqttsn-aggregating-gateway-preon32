@@ -1,3 +1,4 @@
+package aggregatingpreon32;
 // TO DO: IMPORTANT! LEARN HOW TO PACK SEVERAL MENU to 1 BYTE  (BIT MANIPULATION)
 // Asumsi: Header selalu 1 byte.
 public class MQTTSNPacket {

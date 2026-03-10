@@ -1,4 +1,5 @@
 package aggregatingpreon32;
+
 import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -19,13 +20,15 @@ import io.github.cdimascio.dotenv.Dotenv;
 public class GatewayDesktop {
     private int gatewayId = 0x0001;
     private String gatewayAddress = "0x0001";
-    private HashMap<String, Integer> nodeSensorMap;
-    private HashMap<Integer, String> topicMap;
+    private HashMap<String, Integer> nodeSensorMap = new HashMap<>();
+    private HashMap<Integer, String> topicMap = new HashMap<>();
     BlockingQueue<MQTTSNPacket> sendTaskQueue = new LinkedBlockingQueue<>();
     Mqtt5BlockingClient client;
-    private int topicIdIncrement;
+    private int topicIdIncrement = 1;
 
+    private final int BROADCAST_INTERVAL_SECONDS = 30;
     private int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
+    DataConnection conn;
     BufferedOutputStream out; //For sending message to Preon32
     BufferedInputStream in;
 
@@ -211,14 +214,16 @@ public class GatewayDesktop {
     private void runBroadcastConstantly(){
         new Thread(){
             public void run(){
-                try{
-                    MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-                    mqttsnPacket.setADVERTISE(gatewayId);
-                    byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(BROADCAST_ADDRESS, mqttsnPacket.toBytes());
-                    sendToGatewayPreon32(packetToSend);
-                    Thread.sleep(30000);
-                } catch (InterruptedException e){
-                    throw new Error("Failed to broadcast Advertise");
+                while (true){
+                    try{
+                        MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
+                        mqttsnPacket.setADVERTISE(gatewayId);
+                        byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(BROADCAST_ADDRESS, mqttsnPacket.toBytes());
+                        sendToGatewayPreon32(packetToSend);
+                        Thread.sleep(BROADCAST_INTERVAL_SECONDS*1000);
+                    } catch (InterruptedException e){
+                        throw new Error("Failed to broadcast Advertise");
+                    }
                 }
             }
         }.start();
