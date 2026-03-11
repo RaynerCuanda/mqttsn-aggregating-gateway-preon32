@@ -357,7 +357,7 @@
 	3		isDataPending()Z
 	2		getBuffer()[B
 
-1582		NodeSensor
+1578		NodeSensor
 	421		handleREGACK(LMQTTSNPacket;)V
 	313		handleMessage(Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
 	178		run()V
@@ -370,7 +370,7 @@
 	50		handleAcceleration(LPreon32Sensor;)V
 	50		handleTemperature(LPreon32Sensor;)V
 	50		handlePressure(LPreon32Sensor;)V
-	28		handleGatewayTimeout()V
+	24		handleGatewayTimeout()V
 	12		runRadioReceiver()V
 	11		main([Ljava/lang/String;)V
 	6		access$100(LNodeSensor;Lcom/virtenio/radio/ieee_802_15_4/Frame;)V

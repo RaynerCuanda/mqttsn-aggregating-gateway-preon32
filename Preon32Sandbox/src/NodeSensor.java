@@ -100,7 +100,7 @@ public class NodeSensor {
 				mqttsnPacket.setCONNECT(NODE_SENSOR_ID, true, true);
 				send(mqttsnPacket, BASESTATION_ADDR);
 				System.out.println("send connect");
-				Thread.sleep(5000);
+				Thread.sleep(30000);
 				//Jika sudah konek, maka akan selalu sense, terus publish
 			} else if (isConnected){
 				System.out.println("run sense/register");
@@ -248,12 +248,14 @@ public class NodeSensor {
 		}
 	}
 
+	//TO DO: FIX THIS BUG
 	private void handleGatewayTimeout(){
 		if ((System.currentTimeMillis() - timeLastReceive) / 1000 > durationConnectionTime){
-			isConnected = false;
+			// isConnected = false; 
 		}	
 	}
 
+	//FIX NULL EXCEPTION PAS REGISTER
 	private void handleHumidity(Preon32Sensor sensor){
 		if (humTopicId == 0) {
 			handleRegister(humTopic, humTopicId);
