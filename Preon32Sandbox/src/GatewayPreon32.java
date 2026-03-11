@@ -24,19 +24,20 @@ public class GatewayPreon32{
 	private  int COMMON_PANID = 0xCAFE; // Personal Area Network ID
 	// private  String NODE_SENSOR_ID = "gateway"; // IDENTITAS NODE SENSOR
 	private  int LOCAL_ADDRESS = 0x0001; // ALAMAT GATEWAY;
-	// private int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
+	//  private int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
 
 	public static void main(String [] args ) throws Exception
 	{
-		GatewayPreon32 ns = new GatewayPreon32();
-		ns.run();
+		new GatewayPreon32().run();
 	}
 
     private void run() throws Exception{
         useUSART();
         setupRadio();
-        runRadioReceiver();
         runUSARTReceiver();
+        runRadioReceiver();
+    //    byte[] mqttSnPacket = new byte[]{9, 2, 1, 48, 120, 48, 48, 48, 49}; // Contoh MQTT-SN packet advertise
+    //    sendToNodeSensor(mqttSnPacket,2);
     }
 
     private void useUSART() {
@@ -51,7 +52,8 @@ public class GatewayPreon32{
 
     private static USART configUSART() {
         int instanceID = 0;
-        USARTParams params = USARTConstants.PARAMS_115200;
+        USARTParams params = new USARTParams(115200, USART.DATA_BITS_8,
+                USART.STOP_BITS_1, USART.PARITY_NONE);
         NativeUSART usart = NativeUSART.getInstance(instanceID);
         try {
             usart.close();
@@ -73,9 +75,9 @@ public class GatewayPreon32{
                         
                         byte[] encapsulatedMessage = new byte[byteLength];
                         System.arraycopy(incomingByte, 0, encapsulatedMessage, 0, byteLength);
-                        if (encapsulatedMessage[1] == 0xFE){ // Kalo msgType = 0xFE (EncapsulatedMessage)
+                       if ((encapsulatedMessage[1] & 0xFF) == 0xFE){ // Kalo msgType = 0xFE (EncapsulatedMessage)
                             handleEncapsulatedMessage(encapsulatedMessage);
-                        }
+                       }
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -99,9 +101,9 @@ public class GatewayPreon32{
     private void runRadioReceiver() {
         new Thread() {
             public void run() {
-                Frame frame = new Frame();
                 while (true) {
                     try {
+                        Frame frame = new Frame();
                         fio.receive(frame);
                         handleMessageMQTTSN(frame);
                     } catch (Exception e) {
@@ -126,13 +128,12 @@ public class GatewayPreon32{
             out.write(b);
             out.flush();
         } catch (Exception e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
-        }
+        } 
     }
 
     private void sendToNodeSensor(byte[] mqttSnPacket, int destinationAddresss){
-        int frameControl = Frame.TYPE_DATA | Frame.ACK_REQUEST | Frame.DST_ADDR_16
+        int frameControl = Frame.TYPE_DATA |Frame.ACK_REQUEST | Frame.DST_ADDR_16
                 | Frame.INTRA_PAN | Frame.SRC_ADDR_16;
 
         final Frame testFrame = new Frame(frameControl);
@@ -144,22 +145,21 @@ public class GatewayPreon32{
         try {
             fio.transmit(testFrame);
         } catch (IOException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
         }
 	}
 
     private void handleEncapsulatedMessage(byte[] encapsulatedMessage){
-        int lenNotMQTTSN = (byte) encapsulatedMessage[0]; // Panjang pesan diluar MQTT-SN
+        int lenNotMQTTSN = encapsulatedMessage[0] & 0xFF; // Panjang pesan diluar MQTT-SN
         byte[] wirelessNodeId = new byte[lenNotMQTTSN - 3]; // Di kurangi length, msgType, ctrl
         System.arraycopy(encapsulatedMessage, 3, wirelessNodeId, 0, lenNotMQTTSN-3);   
-
         if (wirelessNodeId.length != 2){ // Hanya pake hardware address (tidak bisa MAC, dll)
-            System.out.println("wirelessNodeId is not hardware Address");
+            sendToPC(new byte[]{5, (byte)0xFe, 0, 0, 2, 3, (byte)0x14, 2});
             return;
         } 
         int wirelessNodeIdInt = ((wirelessNodeId[0] & 0xFF ) << 8) | (wirelessNodeId[1] & 0xFF);
-        byte[] mqttsnPacket = new byte[encapsulatedMessage.length - lenNotMQTTSN];
-        System.arraycopy(encapsulatedMessage, lenNotMQTTSN, mqttsnPacket, 0, encapsulatedMessage.length-lenNotMQTTSN);   
-        sendToNodeSensor(mqttsnPacket, wirelessNodeIdInt);
+        byte[] mqttsnPacket = new byte[encapsulatedMessage[lenNotMQTTSN]];
+        System.arraycopy(encapsulatedMessage, lenNotMQTTSN, mqttsnPacket, 0, encapsulatedMessage[lenNotMQTTSN]);  
+        sendToNodeSensor(mqttsnPacket, wirelessNodeIdInt); 
     }
 }

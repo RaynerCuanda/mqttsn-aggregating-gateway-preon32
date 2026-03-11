@@ -382,10 +382,13 @@ public class MQTTSNPacket {
         
         int totalLength = length + MQTTSNMessage.length;
         byte[] EncapsulatedMessage = new byte[totalLength];
-        EncapsulatedMessage[0] = (byte)length;
+
+        EncapsulatedMessage[0] = (byte) length;
         EncapsulatedMessage[1] = msgType;
         EncapsulatedMessage[2] = ctrl;
-        System.arraycopy(MQTTSNMessage, 0, EncapsulatedMessage, 3, MQTTSNMessage.length);
+        EncapsulatedMessage[3] = (byte) ((wirelessNodeId >> 8) & 0xFF); // High byte
+        EncapsulatedMessage[4] = (byte) (wirelessNodeId & 0xFF);
+        System.arraycopy(MQTTSNMessage, 0, EncapsulatedMessage, length, MQTTSNMessage.length);
 
         return EncapsulatedMessage;
     }

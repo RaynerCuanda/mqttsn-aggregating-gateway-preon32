@@ -357,33 +357,12 @@
 	3		isDataPending()Z
 	2		getBuffer()[B
 
-1436		MQTTSNPacket
-	257		setPUBLISH(ZIZIIILjava/lang/String;)V
-	205		setSUBSCRIBE(ZIIII)V
-	165		setSUBSCRIBE(ZIIILjava/lang/String;)V
-	134		setSUBACK(IIII)V
-	97		setCONNECT(Ljava/lang/String;ZZ)V
-	90		setREGISTER(IILjava/lang/String;)V
-	76		setREGACK(III)V
-	76		setPUBACK(III)V
-	54		setADVERTISE(I)V
-	52		setGWINFO(ILjava/lang/String;)V
-	50		toMQTTSN([B)V
-	42		toBytes()[B
-	41		toEncapsulatedMessage(I[B)[B
-	33		setSEARCHGW(I)V
-	33		setCONNACK(I)V
-	15		getMsgType()B
-	12		<init>()V
-	2		getMsgHeader()[B
-	2		getMsgVariablePart()[B
-
-1324		NodeSensor
-	381		handleREGACK(LMQTTSNPacket;)V
-	148		run()V
-	118		handleMessage(Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
+1582		NodeSensor
+	421		handleREGACK(LMQTTSNPacket;)V
+	313		handleMessage(Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
+	178		run()V
 	98		handleRegister(Ljava/lang/String;I)V
-	95		<init>()V
+	90		<init>()V
 	86		handleCONNACK(B)V
 	71		send(LMQTTSNPacket;I)V
 	64		setupRadio()V
@@ -392,10 +371,31 @@
 	50		handleTemperature(LPreon32Sensor;)V
 	50		handlePressure(LPreon32Sensor;)V
 	28		handleGatewayTimeout()V
-	13		main([Ljava/lang/String;)V
 	12		runRadioReceiver()V
+	11		main([Ljava/lang/String;)V
 	6		access$100(LNodeSensor;Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
 	4		access$000(LNodeSensor;)Lcom/virtenio/radio/ieee_802_15_4/FrameIO;
+
+1457		MQTTSNPacket
+	257		setPUBLISH(ZIZIIILjava/lang/String;)V
+	205		setSUBSCRIBE(ZIIII)V
+	165		setSUBSCRIBE(ZIIILjava/lang/String;)V
+	134		setSUBACK(IIII)V
+	97		setCONNECT(Ljava/lang/String;ZZ)V
+	90		setREGISTER(IILjava/lang/String;)V
+	76		setREGACK(III)V
+	76		setPUBACK(III)V
+	62		toEncapsulatedMessage(I[B)[B
+	54		setADVERTISE(I)V
+	52		setGWINFO(ILjava/lang/String;)V
+	50		toMQTTSN([B)V
+	42		toBytes()[B
+	33		setSEARCHGW(I)V
+	33		setCONNACK(I)V
+	15		getMsgType()B
+	12		<init>()V
+	2		getMsgHeader()[B
+	2		getMsgVariablePart()[B
 
 1323		com/virtenio/driver/flash/GenericSPIFlash
 	173		read(I[BII)I
@@ -638,13 +638,13 @@
 	0		getSourceCount()I
 	0		fire(I)V
 
-529		Preon32Sensor
-	134		init()V
-	69		senseHumidity()V
+533		Preon32Sensor
+	156		init()V
 	63		sensePressure()V
 	56		getTemperatureValue()Ljava/lang/String;
 	56		getPressureValue()Ljava/lang/String;
 	52		getAccelValue()Ljava/lang/String;
+	51		senseHumidity()V
 	34		getHumidityValue()Ljava/lang/String;
 	28		senseTemperature()V
 	25		senseAcceleration()V

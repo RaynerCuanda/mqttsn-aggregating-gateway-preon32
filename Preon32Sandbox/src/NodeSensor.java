@@ -37,7 +37,7 @@ public class NodeSensor {
 	private AT86RF231 radio;
 	private FrameIO fio;
 
-	private final String tempTopic = "9017/Temperature";
+	private final String tempTopic ="9017/Temperature";
 	private final String humTopic = "9017/Humidity";
 	private final String airTopic = "9017/AirPressure";
 	private final String accTopic = "9017/Vibration";
@@ -48,8 +48,7 @@ public class NodeSensor {
 	
 	public static void main(String [] args ) throws Exception
 	{
-		NodeSensor ns = new NodeSensor();
-		ns.run();
+		new NodeSensor().run();
 	}
 
     private void setupRadio() {
@@ -67,9 +66,9 @@ public class NodeSensor {
     private void runRadioReceiver() {
         new Thread() {
             public void run() {
-                Frame frame = new Frame();
                 while (true) {
                     try {
+                    	Frame frame = new Frame();
                         fio.receive(frame);
                         handleMessage(frame);
                     } catch (Exception e) {
@@ -93,15 +92,18 @@ public class NodeSensor {
 				MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 				mqttsnPacket.setSEARCHGW(0x00);
 				send(mqttsnPacket, BROADCAST_ADDRESS);
-				Thread.sleep(5000);
-			// Jika address udah ada, buat koneksi
+				System.out.println("send searchgw");
+				 Thread.sleep(5000);
+				// Jika address udah ada, buat koneksi
 			} else if (!isConnected){
 				MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 				mqttsnPacket.setCONNECT(NODE_SENSOR_ID, true, true);
 				send(mqttsnPacket, BASESTATION_ADDR);
+				System.out.println("send connect");
 				Thread.sleep(5000);
-			//Jika sudah konek, maka akan selalu sense, terus publish
+				//Jika sudah konek, maka akan selalu sense, terus publish
 			} else if (isConnected){
+				System.out.println("run sense/register");
 				handleGatewayTimeout();
 				handleHumidity(sensor);
 				handlePressure(sensor);
@@ -120,6 +122,7 @@ public class NodeSensor {
 		packet.toMQTTSN(tempPayload);
 		switch(packet.getMsgType()){
 			case MQTTSNPacket.ADVERTISE:
+				System.out.println("Node Sensor received a ADVERTISE message");
 				if (BASESTATION_ADDR == 0x00){
 					BASESTATION_ADDR = (int)frame.getSrcAddr();
 				}
@@ -128,15 +131,19 @@ public class NodeSensor {
 				}
 				break;
 			case MQTTSNPacket.GWINFO:
+				System.out.println("Node Sensor received a GWINFO message");
 				BASESTATION_ADDR = (int)frame.getSrcAddr();
 				break;
-			case MQTTSNPacket.CONNACK:
+				case MQTTSNPacket.CONNACK:
+				System.out.println("Node Sensor received a CONNACK message");
 				handleCONNACK(packet.getMsgVariablePart()[0]);
 				break;
-			case MQTTSNPacket.REGACK:
+				case MQTTSNPacket.REGACK:
+				System.out.println("Node Sensor received a REGACK message");
 				handleREGACK(packet);
 				break;
 			case MQTTSNPacket.PUBACK:
+				System.out.println("Gateway received a PUBACK message");
 				//Return Code 0x02 (TopicId Invalid)
 				if (packet.getMsgVariablePart()[4] == 0x02){ 
 					int topicId = ((packet.getMsgVariablePart()[0] & 0xFF) << 8) | (packet.getMsgVariablePart()[1] & 0xFF);
@@ -156,13 +163,13 @@ public class NodeSensor {
 
 		private void send(MQTTSNPacket packet, int destinationAddresss){
 		byte[] packetToSend = packet.toBytes();
-        int frameControl = Frame.TYPE_DATA | Frame.ACK_REQUEST | Frame.DST_ADDR_16
+        int frameControl = Frame.TYPE_DATA | Frame.DST_ADDR_16 | Frame.ACK_REQUEST
                 | Frame.INTRA_PAN | Frame.SRC_ADDR_16;
 
         final Frame testFrame = new Frame(frameControl);
         testFrame.setDestPanId(COMMON_PANID);
-        testFrame.setDestAddr(destinationAddresss);
         testFrame.setSrcAddr(localAddress);
+        testFrame.setDestAddr(destinationAddresss);
         testFrame.setPayload(packetToSend);
 
         try {
@@ -188,15 +195,19 @@ public class NodeSensor {
 
 				switch (topicNameStr){
 					case tempTopic:
+						System.out.println("Temperature Registered");
 						tempTopicId = topicId;
 						break;
 					case airTopic:
+						System.out.println("Air Pressure Registered");
 						airTopicId = topicId;
 						break;
 					case humTopic:
+						System.out.println("Humidity Registered");
 						humTopicId = topicId;
 						break;
 					case accTopic:
+						System.out.println("Acceleration Registered");
 						accTopicId = topicId;
 						break;
 				}
@@ -220,7 +231,7 @@ public class NodeSensor {
 	private void handleCONNACK(byte returnCode){
 		switch (returnCode){
 			case 0x00:
-				isConnected = true;
+				this.isConnected = true;
 				break;
 			case 0x01:
 				System.out.println("Gateway REJECTED: CONGESTION");

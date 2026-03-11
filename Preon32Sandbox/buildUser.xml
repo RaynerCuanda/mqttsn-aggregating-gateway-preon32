@@ -17,5 +17,7 @@
 	<target name="context.set.1">
 		<switchContext to="config/context1.properties" />
 	</target>
-
+	<target name="context.set.2">
+		<switchContext to="config/context2.properties" />
+	</target>
 </project>
