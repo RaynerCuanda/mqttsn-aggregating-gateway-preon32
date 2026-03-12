@@ -100,16 +100,16 @@ public class NodeSensor {
 				mqttsnPacket.setCONNECT(NODE_SENSOR_ID, true, true);
 				send(mqttsnPacket, BASESTATION_ADDR);
 				System.out.println("send connect");
-				Thread.sleep(30000);
+				Thread.sleep(5000);
 				//Jika sudah konek, maka akan selalu sense, terus publish
 			} else if (isConnected){
 				System.out.println("run sense/register");
 				handleGatewayTimeout();
-				handleHumidity(sensor);
-				handlePressure(sensor);
 				handleTemperature(sensor);
+				handlePressure(sensor);
 				handleAcceleration(sensor);
-				Thread.sleep(200);  
+				handleHumidity(sensor);
+				Thread.sleep(2000);
 			} 
 		}
 	}
@@ -143,7 +143,7 @@ public class NodeSensor {
 				handleREGACK(packet);
 				break;
 			case MQTTSNPacket.PUBACK:
-				System.out.println("Gateway received a PUBACK message");
+				System.out.println("Node Sensor received a PUBACK message");
 				//Return Code 0x02 (TopicId Invalid)
 				if (packet.getMsgVariablePart()[4] == 0x02){ 
 					int topicId = ((packet.getMsgVariablePart()[0] & 0xFF) << 8) | (packet.getMsgVariablePart()[1] & 0xFF);
@@ -163,7 +163,7 @@ public class NodeSensor {
 
 		private void send(MQTTSNPacket packet, int destinationAddresss){
 		byte[] packetToSend = packet.toBytes();
-        int frameControl = Frame.TYPE_DATA | Frame.DST_ADDR_16 | Frame.ACK_REQUEST
+        int frameControl = Frame.TYPE_DATA | Frame.DST_ADDR_16
                 | Frame.INTRA_PAN | Frame.SRC_ADDR_16;
 
         final Frame testFrame = new Frame(frameControl);
@@ -250,8 +250,13 @@ public class NodeSensor {
 
 	//TO DO: FIX THIS BUG
 	private void handleGatewayTimeout(){
-		if ((System.currentTimeMillis() - timeLastReceive) / 1000 > durationConnectionTime){
+		if ((System.currentTimeMillis() - timeLastReceive) / 1000 < durationConnectionTime){
 			// isConnected = false; 
+			// BASESTATION_ADDR = 0x00;
+			// tempTopicId = 0;
+			// humTopicId = 0;
+			// airTopicId = 0;
+			// accTopicId = 0;
 		}	
 	}
 

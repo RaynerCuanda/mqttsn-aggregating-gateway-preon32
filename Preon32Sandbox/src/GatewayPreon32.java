@@ -133,7 +133,7 @@ public class GatewayPreon32{
     }
 
     private void sendToNodeSensor(byte[] mqttSnPacket, int destinationAddresss){
-        int frameControl = Frame.TYPE_DATA |Frame.ACK_REQUEST | Frame.DST_ADDR_16
+        int frameControl = Frame.TYPE_DATA | Frame.DST_ADDR_16
                 | Frame.INTRA_PAN | Frame.SRC_ADDR_16;
 
         final Frame testFrame = new Frame(frameControl);
@@ -151,6 +151,7 @@ public class GatewayPreon32{
 
     private void handleEncapsulatedMessage(byte[] encapsulatedMessage){
         int lenNotMQTTSN = encapsulatedMessage[0] & 0xFF; // Panjang pesan diluar MQTT-SN
+
         byte[] wirelessNodeId = new byte[lenNotMQTTSN - 3]; // Di kurangi length, msgType, ctrl
         System.arraycopy(encapsulatedMessage, 3, wirelessNodeId, 0, lenNotMQTTSN-3);   
         if (wirelessNodeId.length != 2){ // Hanya pake hardware address (tidak bisa MAC, dll)
