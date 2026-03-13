@@ -7,30 +7,40 @@ const socket = io.connect("http://localhost:8080");
 export default function MyRoom({roomId}){
   
   const initialData = [
-    {topicName: "temperature"      ,value: 0, unit: " °C"  , imgSrc: "temperature.png", label: "Temperature"},
-    {topicName: "air_pressure"     ,value: 0, unit: " kPa" , imgSrc: "temperature.png", label: "Air Pressure"},
-    {topicName: "humidity"         ,value: 0, unit: " %RH" , imgSrc: "temperature.png", label: "Humidity"},
-    {topicName: "light_intensity"  ,value: 0, unit: " lx"  , imgSrc: "temperature.png", label: "Light Intensity"},
-    {topicName: "vibration"        ,value: 0, unit: " g"   , imgSrc: "temperature.png", label: "Vibration"},
-  ]
-  
-  const [sensorData, setSensorData] = useState(initialData)
+    {topicName: "Temperature"      ,value: 0, unit: " °C"  , imgSrc: "temperature.png", label: "Temperature"},
+    {topicName: "AirPressure"     ,value: 0, unit: " kPa" , imgSrc: "temperature.png", label: "Air Pressure"},
+    {topicName: "Humidity"         ,value: 0, unit: " %RH" , imgSrc: "temperature.png", label: "Humidity"},
+    // {topicName: "light_intensity"  ,value: 0, unit: " lx"  , imgSrc: "temperature.png", label: "Light Intensity"},
+    {topicName: "Vibration"        ,value: 0, unit: " g"   , imgSrc: "temperature.png", label: "Vibration"},
+  ];
+  const [sensorData, setSensorData] = useState(initialData);
 
   // sumber: https://react.dev/learn/updating-arrays-in-state
   function updateSensorData(payloadName, payloadContent){
-    const nextList = sensorData.map(payload => {
-      if(payload.topicName === payloadName){
-        return{...payload, value: payloadContent};
-      } else{
-        return payload;
-      }
-    });
-    setSensorData(nextList);
+    
+    // const nextList = sensorData.map(payload => {
+    //   if(payload.topicName === payloadName){
+    //     return{...payload, value: payloadContent};
+    //   } else{
+    //     return payload;
+    //   }
+    // });
+    // setSensorData(nextList);
+    
+    setSensorData(prevData => 
+      prevData.map(payload => {
+        if (payload.topicName === payloadName) {
+          return { ...payload, value: payloadContent };
+        } else {
+          return payload;
+        }
+      })
+    );
   }
   
   useEffect(() =>{
     socket.on('mqtt_data', (data) => {
-      if (data.roomName == roomId){
+      if (data.roomName === roomId){
         updateSensorData(data.payloadName, data.payloadContent)
       }
       // console.log(data);

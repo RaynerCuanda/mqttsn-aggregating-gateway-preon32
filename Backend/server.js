@@ -43,7 +43,7 @@ client.on('message', function (topic, message) {
   const roomName = topicPart[0];
   const payloadName = topicPart[1];
   const payloadContent = message.toString();
-  ioSocket.emit('mqtt_data', { roomName: roomName, payloadName: payloadName, payloadContent: payloadContent });
+  ioSocket.emit('mqtt_data', { roomName: roomName, payloadName: payloadName, payloadContent: payloadContent});
   console.log({ roomName: roomName, payloadName: payloadName, payloadContent: payloadContent });
   // console.log(topic)
   // console.log(payload_content)

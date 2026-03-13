@@ -31,7 +31,7 @@ public class NodeSensor {
 	private boolean isConnected = false;
 	private HashMap<Integer, MQTTSNPacket> RegAckHashMap = new HashMap<Integer, MQTTSNPacket>();
 	private int registerMsgId = 0;
-	private long REGISTER_TIMEOUT = 30000;
+	private long REGISTER_TIMEOUT = 5 * 1000; // seconds
 	private int sequenceNumber = 1;
 	
 	private AT86RF231 radio;
@@ -103,7 +103,6 @@ public class NodeSensor {
 				Thread.sleep(5000);
 				//Jika sudah konek, maka akan selalu sense, terus publish
 			} else if (isConnected){
-				System.out.println("run sense/register");
 				handleGatewayTimeout();
 				handleTemperature(sensor);
 				handlePressure(sensor);
@@ -133,6 +132,7 @@ public class NodeSensor {
 			case MQTTSNPacket.GWINFO:
 				System.out.println("Node Sensor received a GWINFO message");
 				BASESTATION_ADDR = (int)frame.getSrcAddr();
+				durationConnectionTime = 30;
 				break;
 				case MQTTSNPacket.CONNACK:
 				System.out.println("Node Sensor received a CONNACK message");
@@ -248,31 +248,35 @@ public class NodeSensor {
 		}
 	}
 
-	//TO DO: FIX THIS BUG
 	private void handleGatewayTimeout(){
-		if ((System.currentTimeMillis() - timeLastReceive) / 1000 < durationConnectionTime){
-			// isConnected = false; 
-			// BASESTATION_ADDR = 0x00;
-			// tempTopicId = 0;
-			// humTopicId = 0;
-			// airTopicId = 0;
-			// accTopicId = 0;
+		long time_since_receive_from_gw = ((System.currentTimeMillis() - timeLastReceive) / 1000);
+		System.out.println(time_since_receive_from_gw+" seconds since receiving something from GW");
+		if (time_since_receive_from_gw > durationConnectionTime){
+			 isConnected = false; 
+			 BASESTATION_ADDR = 0x00;
+			 tempTopicId = 0;
+			 humTopicId = 0;
+			 airTopicId = 0;
+			 accTopicId = 0;
+			 System.out.println("Connection Time out!");
 		}	
 	}
 
-	//FIX NULL EXCEPTION PAS REGISTER
 	private void handleHumidity(Preon32Sensor sensor){
+		if (!isConnected)return;
 		if (humTopicId == 0) {
-			handleRegister(humTopic, humTopicId);
+			handleRegister(humTopic, humTopicId); // Supaya kalo gateway timeout ga register 
 		} else {
 			String payload = sensor.getHumidityValue();
 			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 			mqttsnPacket.setPUBLISH(false, 0, true, 0x00, humTopicId, 0, payload);
 			send(mqttsnPacket, BASESTATION_ADDR);
+			System.out.println("Publishing Humidity");
 		}
 	}
 
 	private void handleAcceleration(Preon32Sensor sensor){
+		if (!isConnected)return;
 		if (accTopicId == 0) {
 			handleRegister(accTopic, accTopicId);
 		} else {
@@ -280,10 +284,12 @@ public class NodeSensor {
 			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 			mqttsnPacket.setPUBLISH(false, 0, true, 0x00, accTopicId, 0, payload);
 			send(mqttsnPacket, BASESTATION_ADDR);
+			System.out.println("Publishing Acceleration");
 		}
 	}
 
 	private void handleTemperature(Preon32Sensor sensor){
+		if (!isConnected)return;
 		if (tempTopicId == 0) {
 			handleRegister(tempTopic, tempTopicId);
 		} else {
@@ -291,10 +297,12 @@ public class NodeSensor {
 			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 			mqttsnPacket.setPUBLISH(false, 0, true, 0x00, tempTopicId, 0, payload);
 			send(mqttsnPacket, BASESTATION_ADDR);
+			System.out.println("Publishing Temperature");
 		}
 	}
 
 	private void handlePressure(Preon32Sensor sensor){
+		if (!isConnected)return;
 		if (airTopicId == 0) {
 			handleRegister(airTopic, airTopicId);
 		} else {
@@ -302,6 +310,7 @@ public class NodeSensor {
 			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 			mqttsnPacket.setPUBLISH(false, 0, true, 0x00, airTopicId, 0, payload);
 			send(mqttsnPacket, BASESTATION_ADDR);
+			System.out.println("Publishing Air Pressure");
 		}
 	}
 	
@@ -315,8 +324,10 @@ public class NodeSensor {
 				send(mqttsnPacket, BASESTATION_ADDR);
 				registerSentTime = System.currentTimeMillis();
 				sequenceNumber++;
+				System.out.println("Registering "+topicName);
 			} else{
 				if (System.currentTimeMillis() - registerSentTime > REGISTER_TIMEOUT){
+					System.out.println("REGISTER timeout: no REGACK received");
 					RegAckHashMap.remove(registerMsgId);
 					registerMsgId = 0;
 				}

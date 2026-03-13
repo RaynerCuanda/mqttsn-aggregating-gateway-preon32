@@ -32,7 +32,7 @@ public class MQTTSNPacket {
     // public static final byte PINGRESP = 0x17;
     // public static final byte DISCONNECT = 0x18;
 
-    private int keepAliveTime = 300; // seconds
+    private int keepAliveTime = 90; // seconds
 
     private static final byte flags_topicIdType_normal      = (byte) 0x00;
     private static final byte flags_topicIdType_pre         = (byte) 0x01;

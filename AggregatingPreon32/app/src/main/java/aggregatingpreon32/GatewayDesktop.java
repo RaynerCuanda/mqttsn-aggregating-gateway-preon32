@@ -59,7 +59,7 @@ public class GatewayDesktop {
             conn = nodeHelper.runModule("GatewayPreon32");
             out = new BufferedOutputStream(conn.getOutputStream());
             in = new BufferedInputStream(conn.getInputStream());
-            // System.out.println("IO Stream initialized");
+            System.out.println("IO Stream initialized");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -202,15 +202,12 @@ public class GatewayDesktop {
                 .keepAlive(300)
                 .send();
 
-        // if (client.getState().isConnected()) {
-        //     System.out.println("Connected! Sending status...");
-        //     client.publishWith()
-        //             .topic("gateway/status")
-        //             .payload("20".getBytes(UTF_8))
-        //             .send();
-        // } else {
-        //     System.out.println("Failed to connect to broker.");
-        // }
+        if (client.getState().isConnected()) {
+            System.out.println("Connection to Broker Established.");
+        } else {
+            System.out.println("Failed to connect to broker.");
+        }
+        
     }
 
     private void runAggregate() {
