@@ -18,7 +18,7 @@ header {
 	interfaceCount 13
 	implementsCount 15
 	methodCount 606
-	codePoolSize 17517
+	codePoolSize 17516
 	stringCount 24
 }
 classes [
@@ -23088,14 +23088,14 @@ methods [
 		exceptionCount 0
 		argsFieldCount 1
 		flags 192
-		codeLength 12
+		codeLength 11
 		codeOffset 14451
 		getter1For -1
 		getter2For -1
 		localVars [
 			{
 				startPC 0
-				length 12
+				length 11
 				name this
 				descriptor LMQTTSNPacket;
 				index 0
@@ -23104,15 +23104,15 @@ methods [
 		pcToLine {
 			0 52
 			5 34
-			11 53
+			10 53
 		}
 		pcTranslation {
 			0 0
 			1 1
 			4 5
 			5 6
-			8 9
-			11 11
+			7 8
+			10 10
 		}
 	}
 	{
@@ -23126,7 +23126,7 @@ methods [
 		argsFieldCount 1
 		flags 64
 		codeLength 2
-		codeOffset 14463
+		codeOffset 14462
 		getter1For 1
 		getter2For -1
 		localVars [
@@ -23158,7 +23158,7 @@ methods [
 		argsFieldCount 1
 		flags 64
 		codeLength 2
-		codeOffset 14465
+		codeOffset 14464
 		getter1For 2
 		getter2For -1
 		localVars [
@@ -23190,7 +23190,7 @@ methods [
 		argsFieldCount 1
 		flags 64
 		codeLength 15
-		codeOffset 14467
+		codeOffset 14466
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -23237,7 +23237,7 @@ methods [
 		argsFieldCount 2
 		flags 64
 		codeLength 54
-		codeOffset 14482
+		codeOffset 14481
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -23348,7 +23348,7 @@ methods [
 		argsFieldCount 2
 		flags 64
 		codeLength 33
-		codeOffset 14536
+		codeOffset 14535
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -23437,7 +23437,7 @@ methods [
 		argsFieldCount 3
 		flags 64
 		codeLength 52
-		codeOffset 14569
+		codeOffset 14568
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -23556,7 +23556,7 @@ methods [
 		argsFieldCount 4
 		flags 64
 		codeLength 97
-		codeOffset 14621
+		codeOffset 14620
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -23737,7 +23737,7 @@ methods [
 		argsFieldCount 2
 		flags 64
 		codeLength 33
-		codeOffset 14718
+		codeOffset 14717
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -23826,7 +23826,7 @@ methods [
 		argsFieldCount 4
 		flags 64
 		codeLength 90
-		codeOffset 14751
+		codeOffset 14750
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -23985,7 +23985,7 @@ methods [
 		argsFieldCount 4
 		flags 64
 		codeLength 76
-		codeOffset 14841
+		codeOffset 14840
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -24128,7 +24128,7 @@ methods [
 		argsFieldCount 8
 		flags 64
 		codeLength 257
-		codeOffset 14917
+		codeOffset 14916
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -24442,7 +24442,7 @@ methods [
 		argsFieldCount 4
 		flags 64
 		codeLength 76
-		codeOffset 15174
+		codeOffset 15173
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -24585,7 +24585,7 @@ methods [
 		argsFieldCount 6
 		flags 64
 		codeLength 205
-		codeOffset 15250
+		codeOffset 15249
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -24853,7 +24853,7 @@ methods [
 		argsFieldCount 6
 		flags 64
 		codeLength 165
-		codeOffset 15455
+		codeOffset 15454
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -25102,7 +25102,7 @@ methods [
 		argsFieldCount 5
 		flags 64
 		codeLength 134
-		codeOffset 15620
+		codeOffset 15619
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -25310,7 +25310,7 @@ methods [
 		argsFieldCount 2
 		flags 66
 		codeLength 62
-		codeOffset 15754
+		codeOffset 15753
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -25444,7 +25444,7 @@ methods [
 		argsFieldCount 1
 		flags 64
 		codeLength 42
-		codeOffset 15816
+		codeOffset 15815
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -25546,7 +25546,7 @@ methods [
 		argsFieldCount 2
 		flags 0
 		codeLength 50
-		codeOffset 15858
+		codeOffset 15857
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -25668,7 +25668,7 @@ methods [
 		argsFieldCount 0
 		flags 131139
 		codeLength 32
-		codeOffset 15908
+		codeOffset 15907
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25703,7 +25703,7 @@ methods [
 		argsFieldCount 1
 		flags 131138
 		codeLength 12
-		codeOffset 15940
+		codeOffset 15939
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25728,7 +25728,7 @@ methods [
 		argsFieldCount 2
 		flags 196800
 		codeLength 10
-		codeOffset 15952
+		codeOffset 15951
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25757,7 +25757,7 @@ methods [
 		argsFieldCount 1
 		flags 196672
 		codeLength 14
-		codeOffset 15962
+		codeOffset 15961
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25789,7 +25789,7 @@ methods [
 		argsFieldCount 2
 		flags 131136
 		codeLength 25
-		codeOffset 15976
+		codeOffset 15975
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25826,7 +25826,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 22
-		codeOffset 16001
+		codeOffset 16000
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25860,7 +25860,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 12
-		codeOffset 16023
+		codeOffset 16022
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25889,7 +25889,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 13
-		codeOffset 16035
+		codeOffset 16034
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25919,7 +25919,7 @@ methods [
 		argsFieldCount 4
 		flags 131136
 		codeLength 26
-		codeOffset 16048
+		codeOffset 16047
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25958,7 +25958,7 @@ methods [
 		argsFieldCount 2
 		flags 131136
 		codeLength 9
-		codeOffset 16074
+		codeOffset 16073
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25985,7 +25985,7 @@ methods [
 		argsFieldCount 2
 		flags 131136
 		codeLength 9
-		codeOffset 16083
+		codeOffset 16082
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26012,7 +26012,7 @@ methods [
 		argsFieldCount 4
 		flags 131136
 		codeLength 26
-		codeOffset 16092
+		codeOffset 16091
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26051,7 +26051,7 @@ methods [
 		argsFieldCount 2
 		flags 131136
 		codeLength 12
-		codeOffset 16118
+		codeOffset 16117
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26080,7 +26080,7 @@ methods [
 		argsFieldCount 4
 		flags 131136
 		codeLength 23
-		codeOffset 16130
+		codeOffset 16129
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26115,7 +26115,7 @@ methods [
 		argsFieldCount 2
 		flags 131136
 		codeLength 9
-		codeOffset 16153
+		codeOffset 16152
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26143,7 +26143,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 13
-		codeOffset 16162
+		codeOffset 16161
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26172,7 +26172,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 14
-		codeOffset 16175
+		codeOffset 16174
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26202,7 +26202,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 14
-		codeOffset 16189
+		codeOffset 16188
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26232,7 +26232,7 @@ methods [
 		argsFieldCount 2
 		flags 131136
 		codeLength 17
-		codeOffset 16203
+		codeOffset 16202
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26265,7 +26265,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 2
-		codeOffset 16220
+		codeOffset 16219
 		getter1For 4
 		getter2For -1
 		pcToLine {
@@ -26288,7 +26288,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 9
-		codeOffset 16222
+		codeOffset 16221
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26313,7 +26313,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 9
-		codeOffset 16231
+		codeOffset 16230
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26338,7 +26338,7 @@ methods [
 		argsFieldCount 3
 		flags 131264
 		codeLength 6
-		codeOffset 16240
+		codeOffset 16239
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26362,7 +26362,7 @@ methods [
 		argsFieldCount 2
 		flags 131074
 		codeLength 7
-		codeOffset 16246
+		codeOffset 16245
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26386,7 +26386,7 @@ methods [
 		argsFieldCount 2
 		flags 192
 		codeLength 10
-		codeOffset 16253
+		codeOffset 16252
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26414,7 +26414,7 @@ methods [
 		argsFieldCount 2
 		flags 96
 		codeLength 20
-		codeOffset 16273
+		codeOffset 16272
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26450,7 +26450,7 @@ methods [
 		argsFieldCount 4
 		flags 96
 		codeLength 22
-		codeOffset 16303
+		codeOffset 16302
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26488,7 +26488,7 @@ methods [
 		argsFieldCount 1
 		flags 32
 		codeLength 19
-		codeOffset 16335
+		codeOffset 16334
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26523,7 +26523,7 @@ methods [
 		argsFieldCount 1
 		flags 131264
 		codeLength 5
-		codeOffset 16354
+		codeOffset 16353
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26546,7 +26546,7 @@ methods [
 		argsFieldCount 2
 		flags 131136
 		codeLength 10
-		codeOffset 16359
+		codeOffset 16358
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26572,7 +26572,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 6
-		codeOffset 16369
+		codeOffset 16368
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26596,7 +26596,7 @@ methods [
 		argsFieldCount 2
 		flags 131072
 		codeLength 6
-		codeOffset 16375
+		codeOffset 16374
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26620,7 +26620,7 @@ methods [
 		argsFieldCount 2
 		flags 192
 		codeLength 10
-		codeOffset 16381
+		codeOffset 16380
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26648,7 +26648,7 @@ methods [
 		argsFieldCount 1
 		flags 96
 		codeLength 16
-		codeOffset 16401
+		codeOffset 16400
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26680,7 +26680,7 @@ methods [
 		argsFieldCount 4
 		flags 96
 		codeLength 61
-		codeOffset 16427
+		codeOffset 16426
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26736,7 +26736,7 @@ methods [
 		argsFieldCount 1
 		flags 32
 		codeLength 16
-		codeOffset 16498
+		codeOffset 16497
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26768,7 +26768,7 @@ methods [
 		argsFieldCount 2
 		flags 224
 		codeLength 43
-		codeOffset 16524
+		codeOffset 16523
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26820,7 +26820,7 @@ methods [
 		argsFieldCount 3
 		flags 224
 		codeLength 42
-		codeOffset 16577
+		codeOffset 16576
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26872,7 +26872,7 @@ methods [
 		argsFieldCount 1
 		flags 97
 		codeLength 31
-		codeOffset 16659
+		codeOffset 16658
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26922,7 +26922,7 @@ methods [
 		argsFieldCount 1
 		flags 262208
 		codeLength 1
-		codeOffset 16690
+		codeOffset 16689
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26943,7 +26943,7 @@ methods [
 		argsFieldCount 1
 		flags 262208
 		codeLength 1
-		codeOffset 16691
+		codeOffset 16690
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26964,7 +26964,7 @@ methods [
 		argsFieldCount 1
 		flags 65632
 		codeLength 69
-		codeOffset 16712
+		codeOffset 16711
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27042,7 +27042,7 @@ methods [
 		argsFieldCount 2
 		flags 97
 		codeLength 52
-		codeOffset 16821
+		codeOffset 16820
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27105,7 +27105,7 @@ methods [
 		argsFieldCount 2
 		flags 32
 		codeLength 135
-		codeOffset 16983
+		codeOffset 16982
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27245,7 +27245,7 @@ methods [
 		argsFieldCount 1
 		flags 192
 		codeLength 6
-		codeOffset 17118
+		codeOffset 17117
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27269,7 +27269,7 @@ methods [
 		argsFieldCount 2
 		flags 128
 		codeLength 7
-		codeOffset 17124
+		codeOffset 17123
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27294,7 +27294,7 @@ methods [
 		argsFieldCount 2
 		flags 131264
 		codeLength 20
-		codeOffset 17131
+		codeOffset 17130
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27324,7 +27324,7 @@ methods [
 		argsFieldCount 1
 		flags 131137
 		codeLength 32
-		codeOffset 17151
+		codeOffset 17150
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27372,7 +27372,7 @@ methods [
 		argsFieldCount 2
 		flags 131137
 		codeLength 33
-		codeOffset 17183
+		codeOffset 17182
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27429,7 +27429,7 @@ methods [
 		argsFieldCount 1
 		flags 131137
 		codeLength 35
-		codeOffset 17216
+		codeOffset 17215
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27490,7 +27490,7 @@ methods [
 		argsFieldCount 2
 		flags 131137
 		codeLength 132
-		codeOffset 17251
+		codeOffset 17250
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27646,7 +27646,7 @@ methods [
 		argsFieldCount 1
 		flags 131137
 		codeLength 10
-		codeOffset 17383
+		codeOffset 17382
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27679,7 +27679,7 @@ methods [
 		argsFieldCount 2
 		flags 131137
 		codeLength 28
-		codeOffset 17393
+		codeOffset 17392
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27724,7 +27724,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 2
-		codeOffset 17421
+		codeOffset 17420
 		getter1For 3
 		getter2For -1
 		pcToLine {
@@ -27747,7 +27747,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 3
-		codeOffset 17423
+		codeOffset 17422
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27771,7 +27771,7 @@ methods [
 		argsFieldCount 1
 		flags 131137
 		codeLength 5
-		codeOffset 17426
+		codeOffset 17425
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27798,7 +27798,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 10
-		codeOffset 17431
+		codeOffset 17430
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27825,7 +27825,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 12
-		codeOffset 17441
+		codeOffset 17440
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27855,7 +27855,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 9
-		codeOffset 17453
+		codeOffset 17452
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27880,7 +27880,7 @@ methods [
 		argsFieldCount 1
 		flags 131074
 		codeLength 4
-		codeOffset 17462
+		codeOffset 17461
 		getter1For 3
 		getter2For -1
 		pcToLine {
@@ -27903,7 +27903,7 @@ methods [
 		argsFieldCount 2
 		flags 192
 		codeLength 14
-		codeOffset 17466
+		codeOffset 17465
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27933,7 +27933,7 @@ methods [
 		argsFieldCount 1
 		flags 64
 		codeLength 14
-		codeOffset 17480
+		codeOffset 17479
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27963,7 +27963,7 @@ methods [
 		argsFieldCount 1
 		flags 64
 		codeLength 14
-		codeOffset 17494
+		codeOffset 17493
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27994,7 +27994,7 @@ methods [
 		argsFieldCount 1
 		flags 0
 		codeLength 9
-		codeOffset 17508
+		codeOffset 17507
 		getter1For -1
 		getter2For -1
 		pcToLine {

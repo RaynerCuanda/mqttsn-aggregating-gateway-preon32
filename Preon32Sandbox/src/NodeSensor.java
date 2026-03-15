@@ -96,6 +96,7 @@ public class NodeSensor {
 				 Thread.sleep(5000);
 				// Jika address udah ada, buat koneksi
 			} else if (!isConnected){
+				handleGatewayTimeout();
 				MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 				mqttsnPacket.setCONNECT(NODE_SENSOR_ID, true, true);
 				send(mqttsnPacket, BASESTATION_ADDR);

@@ -357,11 +357,11 @@
 	3		isDataPending()Z
 	2		getBuffer()[B
 
-1783		NodeSensor
+1759		NodeSensor
 	421		handleREGACK(LMQTTSNPacket;)V
 	325		handleMessage(Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
-	168		run()V
-	167		handleRegister(Ljava/lang/String;I)V
+	172		run()V
+	139		handleRegister(Ljava/lang/String;I)V
 	94		handleGatewayTimeout()V
 	90		<init>()V
 	86		handleCONNACK(B)V
