@@ -30,7 +30,7 @@ public class MQTTSNPacket {
     // public static final byte UNSUBACK = 0x15;
     // public static final byte PINGREQ = 0x16;
     // public static final byte PINGRESP = 0x17;
-    // public static final byte DISCONNECT = 0x18;
+    public static final byte DISCONNECT = 0x18;
 
     private int keepAliveTime = 90; // seconds
 
@@ -373,6 +373,17 @@ public class MQTTSNPacket {
         this.msgVariablePart[3] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
         this.msgVariablePart[4] = (byte) (msgId & 0xFF);        // Low Byte (LSB)
         this.msgVariablePart[5] = (byte) returnCode;
+    }
+
+    public void setDISCONNECT(){
+        int headerLength = 1 + 1; // Length (0), MsgType (1)
+        int msgVariablePartLength = 0 ; //Duration (Optional) *Tidak digunakan pada tugas akhir ini
+        
+        this.msgHeader = new byte[headerLength];
+        // this.msgVariablePart = new byte[msgVariablePartLength];
+        
+        this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
+        this.msgHeader[1] = DISCONNECT;
     }
 
     public static byte[] toEncapsulatedMessage(int wirelessNodeId, byte[] MQTTSNMessage){

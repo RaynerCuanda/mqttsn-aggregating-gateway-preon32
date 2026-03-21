@@ -155,7 +155,7 @@ public class GatewayPreon32{
         byte[] wirelessNodeId = new byte[lenNotMQTTSN - 3]; // Di kurangi length, msgType, ctrl
         System.arraycopy(encapsulatedMessage, 3, wirelessNodeId, 0, lenNotMQTTSN-3);   
         if (wirelessNodeId.length != 2){ // Hanya pake hardware address (tidak bisa MAC, dll)
-            sendToPC(new byte[]{5, (byte)0xFe, 0, 0, 2, 3, (byte)0x14, 2});
+            sendToPC(new byte[]{5, (byte)0xFe, 0, 0, 2, 3, (byte)0xFD, 2});
             return;
         } 
         int wirelessNodeIdInt = ((wirelessNodeId[0] & 0xFF ) << 8) | (wirelessNodeId[1] & 0xFF);

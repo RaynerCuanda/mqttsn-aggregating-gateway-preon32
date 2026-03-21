@@ -17,8 +17,9 @@ import com.virtenio.commander.toolsets.preon32.Preon32Helper;
 public class GatewayDesktop {
     private int gatewayId = 0x0001;
     private String gatewayAddress = "0x0001";
-    private HashMap<String, Integer> nodeSensorMap = new HashMap<>();
-    private HashMap<Integer, String> topicMap = new HashMap<>();
+    private HashMap<String, Integer> nodeSensorMap = new HashMap<>(); // Client ID Key, Node Sensor Physical Address (WirelessNodeId) Value
+    private HashMap<Integer, String> topicMap = new HashMap<>(); //Topid ID  key, Topic name Value
+    private HashMap<String, Integer> topicReverseMap = new HashMap<>(); //Topid name key, Topic ID Value
     BlockingQueue<MQTTSNPacket> sendTaskQueue = new LinkedBlockingQueue<>();
 
     Mqtt5BlockingClient client;
@@ -141,39 +142,57 @@ public class GatewayDesktop {
                 sendToGatewayPreon32(packetToSend);
                 break;
             }
-            case MQTTSNPacket.REGISTER:{ //TO DO: Jika topik sudah pernah di register, langsung return aja jangan bikin baru (Harus bikin map value, key?)
-                System.out.println("Gateway received a REGISTER message");
-                int topicId = topicIdIncrement;
-                topicIdIncrement++;
-                int msgId = ((mqttsnPacket.getMsgVariablePart()[2] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[3] & 0xFF);
-
-                int topicNameLength = mqttsnPacket.getMsgHeader()[0]-6;
-                byte[] tempName = new byte[topicNameLength];
-                System.arraycopy(mqttsnPacket.getMsgVariablePart(), 4, tempName, 0, topicNameLength);
-                String topicName = new String(tempName);
-
-                topicMap.put(topicId, topicName);
-                response.setREGACK(topicId, msgId, 0x00); //Success
-                byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, response.toBytes());
-                sendToGatewayPreon32(packetToSend);
-                break;
-            }
-            case MQTTSNPacket.PUBLISH:{
-                int topicId = ((mqttsnPacket.getMsgVariablePart()[1] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[2] & 0xFF);
-                
-                String topicName = topicMap.get(topicId);
-                if (topicName == null){ // Ga ketemu mappingnya, jadi harus send PUBACK ke sensor
-                    System.out.println("Gateway received a PUBLISH message, but topic not found. Sending PUBACK");
-                    response.setPUBACK(topicId, 0x00, 0x02); // Topic id invalid
+            case MQTTSNPacket.REGISTER:{
+                if (nodeSensorMap.containsValue(wirelessNodeId)){ 
+                    System.out.println("Gateway received a REGISTER message");
+    
+                    int topicId;
+                    int msgId = ((mqttsnPacket.getMsgVariablePart()[2] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[3] & 0xFF);
+    
+                    int topicNameLength = mqttsnPacket.getMsgHeader()[0]-6;
+                    byte[] tempName = new byte[topicNameLength];
+                    System.arraycopy(mqttsnPacket.getMsgVariablePart(), 4, tempName, 0, topicNameLength);
+                    String topicName = new String(tempName);
+    
+                    if (topicMap.containsValue(topicName)){
+                        topicId = topicReverseMap.get(topicName);
+                    } else { // Kalo belum pernah di daftarin
+                        topicId = topicIdIncrement;
+                        topicIdIncrement++;
+                    }
+                    topicMap.put(topicId, topicName);
+                    response.setREGACK(topicId, msgId, 0x00); //Success
                     byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, response.toBytes());
                     sendToGatewayPreon32(packetToSend);
-                } else {
-                    System.out.println("Gateway received a PUBLISH message"+ topicName+" with topic id: "+topicId);
-                    sendTaskQueue.add(mqttsnPacket);
+                } else{ // Kalo belum ada di map, suruh DISCONNECT
+                    response.setDISCONNECT();
+                    byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, response.toBytes());
+                    sendToGatewayPreon32(packetToSend);
                 }
                 break;
             }
-            case 0x14:{
+            case MQTTSNPacket.PUBLISH:{
+                if (nodeSensorMap.containsValue(wirelessNodeId)){
+                    int topicId = ((mqttsnPacket.getMsgVariablePart()[1] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[2] & 0xFF);
+                    
+                    String topicName = topicMap.get(topicId);
+                    if (topicName == null){ // Ga ketemu mappingnya, jadi harus send PUBACK ke sensor
+                        System.out.println("Gateway received a PUBLISH message, but topic not found. Sending PUBACK");
+                        response.setPUBACK(topicId, 0x00, 0x02); // Topic id invalid
+                        byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, response.toBytes());
+                        sendToGatewayPreon32(packetToSend);
+                    } else {
+                        System.out.println("Gateway received a PUBLISH message"+ topicName+" with topic id: "+topicId);
+                        sendTaskQueue.add(mqttsnPacket);
+                    }
+                } else { // Kalo belum ada di map, suruh DISCONNECT
+                    response.setDISCONNECT();
+                    byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, response.toBytes());
+                    sendToGatewayPreon32(packetToSend);
+                }
+                break;
+            }
+            case 0xFD:{
                 System.out.println("unhandled: Wireless Node Id > 2"); // kode 0x14 untuk debug 
             }
             default:{
