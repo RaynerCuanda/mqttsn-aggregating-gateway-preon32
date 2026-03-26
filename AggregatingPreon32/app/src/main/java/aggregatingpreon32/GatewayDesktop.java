@@ -66,6 +66,11 @@ public class GatewayDesktop {
         }
     }
 
+    private void encapsulateAndSendToGW(int wirelessNodeId, MQTTSNPacket packet){
+        byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, packet.toBytes());
+        sendToGatewayPreon32(packetToSend);
+    }
+
     private void sendToGatewayPreon32(byte[] EncapsulatedMessage){
         try {
             // System.out.println("sending to gateway preon32..");
@@ -126,8 +131,7 @@ public class GatewayDesktop {
             case MQTTSNPacket.SEARCHGW:{
                 System.out.println("Gateway received a SEARCHGW message");
                 response.setGWINFO(gatewayId, gatewayAddress);
-                byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, response.toBytes());
-                sendToGatewayPreon32(packetToSend);
+                encapsulateAndSendToGW(wirelessNodeId, response);
                 break;
             }
             case MQTTSNPacket.CONNECT:{
@@ -138,8 +142,7 @@ public class GatewayDesktop {
                 String nodeName = new String(tempName);
                 nodeSensorMap.put(nodeName, wirelessNodeId);
                 response.setCONNACK( 0x00); // Accepted
-                byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, response.toBytes());
-                sendToGatewayPreon32(packetToSend);
+                encapsulateAndSendToGW(wirelessNodeId, response);
                 break;
             }
             case MQTTSNPacket.REGISTER:{
@@ -162,12 +165,10 @@ public class GatewayDesktop {
                     }
                     topicMap.put(topicId, topicName);
                     response.setREGACK(topicId, msgId, 0x00); //Success
-                    byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, response.toBytes());
-                    sendToGatewayPreon32(packetToSend);
+                    encapsulateAndSendToGW(wirelessNodeId, response);
                 } else{ // Kalo belum ada di map, suruh DISCONNECT
                     response.setDISCONNECT();
-                    byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, response.toBytes());
-                    sendToGatewayPreon32(packetToSend);
+                    encapsulateAndSendToGW(wirelessNodeId, response);
                 }
                 break;
             }
@@ -179,16 +180,14 @@ public class GatewayDesktop {
                     if (topicName == null){ // Ga ketemu mappingnya, jadi harus send PUBACK ke sensor
                         System.out.println("Gateway received a PUBLISH message, but topic not found. Sending PUBACK");
                         response.setPUBACK(topicId, 0x00, 0x02); // Topic id invalid
-                        byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, response.toBytes());
-                        sendToGatewayPreon32(packetToSend);
+                        encapsulateAndSendToGW(wirelessNodeId, response);
                     } else {
                         System.out.println("Gateway received a PUBLISH message"+ topicName+" with topic id: "+topicId);
                         sendTaskQueue.add(mqttsnPacket);
                     }
                 } else { // Kalo belum ada di map, suruh DISCONNECT
                     response.setDISCONNECT();
-                    byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, response.toBytes());
-                    sendToGatewayPreon32(packetToSend);
+                    encapsulateAndSendToGW(wirelessNodeId, response);
                 }
                 break;
             }
