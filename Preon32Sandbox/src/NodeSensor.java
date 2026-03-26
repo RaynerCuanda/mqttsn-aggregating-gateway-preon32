@@ -157,6 +157,12 @@ public class NodeSensor {
 					} else if(accTopicId == topicId){
 						accTopicId = 0;	
 					}
+				} else if (packet.getMsgVariablePart()[4] == 0x00){ // Return Code 0x00 (Accepted)
+					System.out.println("Gateway ACCEPTED: PUBLISH");
+					// Ilangin dari map, karena udah di acknowledge sama gateway\
+					
+				} else {
+					System.out.println("Gateway REJECTED: unknown reason");
 				}
 				break;
 		}

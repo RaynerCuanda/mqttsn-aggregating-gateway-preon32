@@ -7,8 +7,13 @@ import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import com.hivemq.client.mqtt.MqttClient;
-import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
+import org.eclipse.paho.mqttv5.client.IMqttToken;
+import org.eclipse.paho.mqttv5.client.MqttAsyncClient;
+import org.eclipse.paho.mqttv5.client.MqttConnectionOptions;
+import org.eclipse.paho.mqttv5.client.persist.MemoryPersistence;
+import org.eclipse.paho.mqttv5.common.MqttException;
+import org.eclipse.paho.mqttv5.common.MqttMessage;
+
 import com.virtenio.commander.io.DataConnection;
 import com.virtenio.commander.toolsets.preon32.Preon32Helper;
 
@@ -19,10 +24,13 @@ public class GatewayDesktop {
     private String gatewayAddress = "0x0001";
     private HashMap<String, Integer> nodeSensorMap = new HashMap<>();
     private HashMap<Integer, String> topicMap = new HashMap<>();
+    private HashMap<MQTTSNPacket, Integer> waitingPubAckMap = new HashMap<>();
     BlockingQueue<MQTTSNPacket> sendTaskQueue = new LinkedBlockingQueue<>();
 
-    Mqtt5BlockingClient client;
-
+    // Mqtt5BlockingClient client;
+    MqttAsyncClient client;
+    IMqttToken token;
+    
     private int topicIdIncrement = 1;
 
     private final String PORT_NUMBER = "COM5";
@@ -36,7 +44,8 @@ public class GatewayDesktop {
     // final String host = dotenv.get("MQTT_HOST");
     // final String username = dotenv.get("MQTT_USER");
     // final String password = dotenv.get("MQTT_PASS");
-    final String host = "b6f0de39dbdb4fbc89413670aabed28a.s1.eu.hivemq.cloud"; 
+    // final String host = "b6f0de39dbdb4fbc89413670aabed28a.s1.eu.hivemq.cloud"; 
+    final String host = "ssl://b6f0de39dbdb4fbc89413670aabed28a.s1.eu.hivemq.cloud:8883"; 
     final String username = "admin" ;
     final String password = "Admin123"; 
 
@@ -144,7 +153,7 @@ public class GatewayDesktop {
             case MQTTSNPacket.REGISTER:{ //TO DO: Jika topik sudah pernah di register, langsung return aja jangan bikin baru (Harus bikin map value, key?)
                 System.out.println("Gateway received a REGISTER message");
                 int topicId = topicIdIncrement;
-                topicIdIncrement++;
+                increaseTopicId();
                 int msgId = ((mqttsnPacket.getMsgVariablePart()[2] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[3] & 0xFF);
 
                 int topicNameLength = mqttsnPacket.getMsgHeader()[0]-6;
@@ -170,11 +179,20 @@ public class GatewayDesktop {
                 } else {
                     System.out.println("Gateway received a PUBLISH message"+ topicName+" with topic id: "+topicId);
                     sendTaskQueue.add(mqttsnPacket);
+                    int messageId = mqttsnPacket.getMsgVariablePart()[3] << 8 | mqttsnPacket.getMsgVariablePart()[4];
+                    if (messageId != 0){
+                        waitingPubAckMap.put(mqttsnPacket, wirelessNodeId);
+                    }
                 }
                 break;
             }
             case 0x14:{
-                System.out.println("unhandled: Wireless Node Id > 2"); // kode 0x14 untuk debug 
+                System.out.println("unhandled: Wireless Node Id > 2"); // kode 0x14 untuk debug Preon32Gateway(Tidak sesuai spec)
+            }
+            case MQTTSNPacket.PUBACK:{
+                // TO DO:
+                System.out.println("Gateway received a PUBACK message, but currently not handled by gateway");
+                break;
             }
             default:{
                 System.out.println("Gateway received an unsupported message type: "+mqttsnPacket.getMsgType() + " with payload: " + new String(mqttsnPacket.getMsgVariablePart()));
@@ -186,28 +204,22 @@ public class GatewayDesktop {
 
 
     private void initConnectionBroker(){
-        client = MqttClient.builder()
-                .useMqttVersion5()
-                .serverHost(host)
-                .serverPort(8883)
-                .sslWithDefaultConfig()
-                .buildBlocking();
-                
+        try {
+            client = new MqttAsyncClient(host,
+            "raynercuanda",
+            new MemoryPersistence());
 
-        client.connectWith()
-                .simpleAuth()
-                .username(username)
-                .password(password.getBytes(UTF_8))
-                .applySimpleAuth()
-                .keepAlive(300)
-                .send();
+            MqttConnectionOptions mqttConnectOptions = new MqttConnectionOptions();
+            mqttConnectOptions.setUserName(username);
+            mqttConnectOptions.setPassword(password.getBytes(UTF_8));
 
-        if (client.getState().isConnected()) {
+            client.connect(mqttConnectOptions);
             System.out.println("Connection to Broker Established.");
-        } else {
+        } catch (MqttException e) {
             System.out.println("Failed to connect to broker.");
+            e.printStackTrace();
         }
-        
+
     }
 
     private void runAggregate() {
@@ -218,6 +230,7 @@ public class GatewayDesktop {
                         MQTTSNPacket mqttsnPacket = sendTaskQueue.take();
                         
                         int topicId = ((mqttsnPacket.getMsgVariablePart()[1] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[2] & 0xFF);
+                        int messageId = ((mqttsnPacket.getMsgVariablePart()[3] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[4] & 0xFF);
                         String topicName = topicMap.get(topicId);
                         
                         int payloadLength = mqttsnPacket.getMsgHeader()[0]-7; 
@@ -225,19 +238,27 @@ public class GatewayDesktop {
                         System.arraycopy(mqttsnPacket.getMsgVariablePart(), 5, payloadTemp, 0, payloadLength);
                         String payload = new String(payloadTemp);
                         
-                        if (client != null && client.getState().isConnected()){
-                            client.publishWith()
-                            .topic(topicName)
-                            .payload(UTF_8.encode(payload))
-                            .send();
-                            System.out.println("Publishing to broker, topic: "+topicName+", payload: "+payload);
-                        } else {
-                            System.out.println("Client is not connected to broker, trying to reconnect...");
-                            sendTaskQueue.put(mqttsnPacket); // Masukin lagi ke queue biar bisa dicoba lagi setelah koneksi berhasil
-                            initConnectionBroker();
+                        int flags = mqttsnPacket.getMsgVariablePart()[0] & 0xFF;
+                        int qosBits = ( flags & 0x60) >> 5; // Ambil bit QoS
+
+                        MqttMessage message = new MqttMessage(payload.getBytes(UTF_8));
+                        if (qosBits == 1){
+                            message.setQos(1);
+                        } else { //Tidak implementasi QoS 2
+                            message.setQos(0);
                         }
-                    } catch (InterruptedException e){
-                        throw new Error("Packet failed to send to broker");
+                        
+                        token = client.publish(topicName, message);
+                        token.waitForCompletion();
+                        if (qosBits == 1){
+                            MQTTSNPacket pubackPacket = new MQTTSNPacket();
+                            pubackPacket.setPUBACK(topicId, messageId, 0x00);
+                            sendToGatewayPreon32(MQTTSNPacket.toEncapsulatedMessage(waitingPubAckMap.remove(mqttsnPacket), pubackPacket.toBytes()));
+                        } else {
+                            System.out.println("Message published with QoS 0, no PUBACK needed.");
+                        }
+                    } catch (Exception e){  
+                        System.err.println("Packet failed to send to broker: "+e);
                     }
                     
                 }
@@ -257,10 +278,17 @@ public class GatewayDesktop {
                         // System.out.println("Broadcasting ADVERTISE message: "+java.util.Arrays.toString(packetToSend)); 
                         Thread.sleep(BROADCAST_INTERVAL_SECONDS*1000);
                     } catch (InterruptedException e){
-                        throw new Error("Failed to broadcast ADVERTISE message");
+                        System.err.println("Failed to broadcast ADVERTISE message");
                     }
                 }
             }
         }.start();
+    }
+
+    private void increaseTopicId(){
+        topicIdIncrement++;
+        if (this.topicIdIncrement > 65535){
+                this.topicIdIncrement = 1;
+        } 
     }
 }
