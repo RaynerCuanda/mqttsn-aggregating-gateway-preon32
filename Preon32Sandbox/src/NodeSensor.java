@@ -16,6 +16,7 @@ import com.virtenio.radio.ieee_802_15_4.Frame;
 import com.virtenio.radio.ieee_802_15_4.FrameIO;
 import com.virtenio.radio.ieee_802_15_4.RadioDriver;
 import com.virtenio.radio.ieee_802_15_4.RadioDriverFrameIO;
+import com.virtenio.vm.Time;
 
 public class NodeSensor {
 	// private int COMMON_CHANNEL = 24; // channel
@@ -30,9 +31,12 @@ public class NodeSensor {
 	private long registerSentTime;
 	private boolean isConnected = false;
 	private HashMap<Integer, MQTTSNPacket> RegAckHashMap = new HashMap<Integer, MQTTSNPacket>();
-	private int registerMsgId = 0;
-	private long REGISTER_TIMEOUT = 5 * 1000; // seconds
-	private int sequenceNumber = 1;
+	private HashMap<Integer, PublishHelper> pubAckHashMap = new HashMap<Integer, PublishHelper>();
+	private int currentRegisterId = 0;
+	private long REGISTER_TIMEOUT = 10 * 1000; // seconds
+	private int registerCounter = 1;
+	private int pubAckCounter = 1;
+	private long PUBACK_TIMEOUT = 10 * 1000; //
 	
 	private AT86RF231 radio;
 	private FrameIO fio;
@@ -109,6 +113,7 @@ public class NodeSensor {
 				handlePressure(sensor);
 				handleAcceleration(sensor);
 				handleHumidity(sensor);
+				handlePubAckTimeOut();
 				Thread.sleep(2000);
 			} 
 		}
@@ -159,7 +164,9 @@ public class NodeSensor {
 					}
 				} else if (packet.getMsgVariablePart()[4] == 0x00){ // Return Code 0x00 (Accepted)
 					System.out.println("Gateway ACCEPTED: PUBLISH");
-					// Ilangin dari map, karena udah di acknowledge sama gateway\
+					// Ilangin dari map, karena udah di acknowledge sama gateway
+					int messageId = ((packet.getMsgVariablePart()[2] & 0xFF) << 8) | (packet.getMsgVariablePart()[3] & 0xFF);
+					pubAckHashMap.remove(messageId);
 					
 				} else {
 					System.out.println("Gateway REJECTED: unknown reason");
@@ -176,7 +183,7 @@ public class NodeSensor {
 		}
 	}
 
-		private void send(MQTTSNPacket packet, int destinationAddresss){
+	private void send(MQTTSNPacket packet, int destinationAddresss){
 		byte[] packetToSend = packet.toBytes();
         int frameControl = Frame.TYPE_DATA | Frame.DST_ADDR_16
                 | Frame.INTRA_PAN | Frame.SRC_ADDR_16;
@@ -194,11 +201,23 @@ public class NodeSensor {
         }
 	}
 
+	private void handlePubAckTimeOut(){
+		for (Integer i: pubAckHashMap.keySet()){
+			PublishHelper published = pubAckHashMap.get(i);
+
+			if (System.currentTimeMillis() - published.timeSend> PUBACK_TIMEOUT){
+				send(published.publishPacket, BASESTATION_ADDR);
+
+				published.timeSend = System.currentTimeMillis();
+			}
+		}
+	}
+
 	private void handleREGACK(MQTTSNPacket mqttsnPacket){
 	
 		int topicId = ((mqttsnPacket.getMsgVariablePart()[0] & 0xFF) << 8) | (mqttsnPacket.getMsgVariablePart()[1] & 0xFF); // Topic Id: 0,1
 		int messageId = ((mqttsnPacket.getMsgVariablePart()[2] & 0xFF) << 8) | (mqttsnPacket.getMsgVariablePart()[3] & 0xFF); // Message Id: 2,3
-		if (messageId != registerMsgId){ // Artinya messageID yang sebelumnya udah di hapus, jadi ga usah di proses karena udah ga ada di Map.
+		if (messageId != currentRegisterId){ // Artinya messageID yang sebelumnya udah di hapus, jadi ga usah di proses karena udah ga ada di Map.
 			return;
 		}
 		switch (mqttsnPacket.getMsgVariablePart()[4]){
@@ -240,7 +259,7 @@ public class NodeSensor {
 				RegAckHashMap.remove(messageId);
 				break;
 			}
-		registerMsgId = 0;
+		currentRegisterId = 0;
 	}
 
 	private void handleCONNACK(byte returnCode){
@@ -277,14 +296,27 @@ public class NodeSensor {
 		}	
 	}
 
+
 	private void handleHumidity(Preon32Sensor sensor){
 		if (!isConnected)return;
 		if (humTopicId == 0) {
 			handleRegister(humTopic, humTopicId); // Supaya kalo gateway timeout ga register 
 		} else {
+			// String payload = sensor.getHumidityValue();
+			// MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
+			// mqttsnPacket.setPUBLISH(false, 0, true, 0x00, humTopicId, 0, payload);
+			// send(mqttsnPacket, BASESTATION_ADDR);
+			// System.out.println("Publishing Humidity");
+
+			//  Contoh pesan Publish dengan QoS 1
 			String payload = sensor.getHumidityValue();
 			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-			mqttsnPacket.setPUBLISH(false, 0, true, 0x00, humTopicId, 0, payload);
+			mqttsnPacket.setPUBLISH(false, 1, true, 0x00, humTopicId, pubAckCounter, payload);
+			pubAckCounter++; // TO DO: nanti ubah jadi increasePubAckCounter biar ga overflow (Klo > 65535)
+
+			PublishHelper pub = new PublishHelper(mqttsnPacket, System.currentTimeMillis());
+			pubAckHashMap.put(pubAckCounter, pub);
+
 			send(mqttsnPacket, BASESTATION_ADDR);
 			System.out.println("Publishing Humidity");
 		}
@@ -331,20 +363,20 @@ public class NodeSensor {
 	
 	private void handleRegister(String topicName, int topicId){
 		if (topicId == 0){
-			if (registerMsgId == 0){
+			if (currentRegisterId == 0){ // Kalo belum ada paket yang sedang di daftarkan
 				MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-				mqttsnPacket.setREGISTER(0, sequenceNumber, topicName); //topicId pasti 0, kalau di kirim Client (Node sensor) 
-				RegAckHashMap.put(sequenceNumber, mqttsnPacket);
-				registerMsgId = sequenceNumber;
+				mqttsnPacket.setREGISTER(0, registerCounter, topicName); //topicId pasti 0, kalau di kirim Client (Node sensor) 
+				RegAckHashMap.put(registerCounter, mqttsnPacket);
+				currentRegisterId = registerCounter;
 				send(mqttsnPacket, BASESTATION_ADDR);
 				registerSentTime = System.currentTimeMillis();
-				sequenceNumber++;
+				registerCounter++;
 				System.out.println("Registering "+topicName);
-			} else{
+			} else{ // Kalo udah ada yang di daftar, coba cek timeout. Kalo time out, hapus dari regack map 
 				if (System.currentTimeMillis() - registerSentTime > REGISTER_TIMEOUT){
 					System.out.println("REGISTER timeout: no REGACK received");
-					RegAckHashMap.remove(registerMsgId);
-					registerMsgId = 0;
+					RegAckHashMap.remove(currentRegisterId);
+					currentRegisterId = 0;
 				}
 			}
 		}

@@ -8,6 +8,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.eclipse.paho.mqttv5.client.IMqttToken;
+import org.eclipse.paho.mqttv5.client.MqttActionListener;
 import org.eclipse.paho.mqttv5.client.MqttAsyncClient;
 import org.eclipse.paho.mqttv5.client.MqttConnectionOptions;
 import org.eclipse.paho.mqttv5.client.persist.MemoryPersistence;
@@ -25,16 +26,18 @@ public class GatewayDesktop {
     private HashMap<String, Integer> nodeSensorMap = new HashMap<>(); // Client ID Key, Node Sensor Physical Address (WirelessNodeId) Value
     private HashMap<Integer, String> topicMap = new HashMap<>(); //Topid ID  key, Topic name Value
     private HashMap<String, Integer> topicReverseMap = new HashMap<>(); //Topid name key, Topic ID Value
-    private HashMap<MQTTSNPacket, Integer> waitingPubAckMap = new HashMap<>();
+    private HashMap<MQTTSNPacket, Integer> waitingPubAckMap = new HashMap<>(); // Pesan PUBLISH key, WirelessNodeId value
     BlockingQueue<MQTTSNPacket> sendTaskQueue = new LinkedBlockingQueue<>();
 
     // Mqtt5BlockingClient client;
     MqttAsyncClient client;
     IMqttToken token;
+
     
     private int topicIdIncrement = 1;
-
+    
     private final String PORT_NUMBER = "COM5";
+    private final long MAX_WAIT_PUBACK_TIME = 5;
     private final int BROADCAST_INTERVAL_SECONDS = 30;
     private final int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
     DataConnection conn;
@@ -55,11 +58,11 @@ public class GatewayDesktop {
     }
 
     public void run() {
-        initIOStream(); // Menjalankan Gateway Preon32 beserta IO-nya
+        // initIOStream(); // Menjalankan Gateway Preon32 beserta IO-nya
         initConnectionBroker(); // Connect ke broker
-        runPortReader(); // Baca port USART
-        runBroadcastConstantly(); // untuk send ADVERTISE
-        runAggregate(); //  untuk send Publish
+        // runPortReader(); // Baca port USART
+        // runBroadcastConstantly(); // untuk send ADVERTISE
+        // runAggregate(); //  untuk send Publish
     }   
 
     private void initIOStream() {
@@ -201,10 +204,12 @@ public class GatewayDesktop {
                 } else { // Kalo belum ada di map, suruh DISCONNECT
                     response.setDISCONNECT();
                     encapsulateAndSendToGW(wirelessNodeId, response);
-                break;
+                }
+                break;  
             }
             case 0x14:{
                 System.out.println("unhandled: Wireless Node Id > 2"); // kode 0x14 untuk debug Preon32Gateway(Tidak sesuai spec)
+                break;
             }
             case MQTTSNPacket.PUBACK:{
                 // TO DO:
@@ -230,20 +235,39 @@ public class GatewayDesktop {
             mqttConnectOptions.setUserName(username);
             mqttConnectOptions.setPassword(password.getBytes(UTF_8));
 
-            client.connect(mqttConnectOptions);
+            IMqttToken connectToken = client.connect(mqttConnectOptions);
+            connectToken.waitForCompletion();
             System.out.println("Connection to Broker Established.");
         } catch (MqttException e) {
             System.out.println("Failed to connect to broker.");
             e.printStackTrace();
         }
 
+        // Testing
+        // MqttMessage message = new MqttMessage("Tes".getBytes(UTF_8));
+        // message.setQos(1);
+        
+        // try{
+        //     MqttActionListener pubListener = new MqttActionListener() {
+        //         public void onSuccess(IMqttToken asyncActionToken) {
+        //             System.out.println("Successs publish 1");
+        //         }
+                
+        //         public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+        //             System.err.println("Failure publsh");
+        //         }
+        //     };
+        //     token = client.publish("helo", message, null, pubListener);
+        // } catch (Exception e){
+        //     System.err.println("Packet failed to send to broker: "+e);
+        // }
     }
 
     private void runAggregate() {
         new Thread() {
             public void run() {
                 while(true){
-                    try{
+                    try {
                         MQTTSNPacket mqttsnPacket = sendTaskQueue.take();
                         
                         int topicId = ((mqttsnPacket.getMsgVariablePart()[1] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[2] & 0xFF);
@@ -257,27 +281,33 @@ public class GatewayDesktop {
                         
                         int flags = mqttsnPacket.getMsgVariablePart()[0] & 0xFF;
                         int qosBits = ( flags & 0x60) >> 5; // Ambil bit QoS
-
+                        
                         MqttMessage message = new MqttMessage(payload.getBytes(UTF_8));
                         if (qosBits == 1){
                             message.setQos(1);
-                        } else { //Tidak implementasi QoS 2
+                            MqttActionListener pubListener = new MqttActionListener() {
+                                public void onSuccess(IMqttToken asyncActionToken) {
+                                    // Kalo dapet balesan dari Broker, kirim pesan PUBACK ke Node Sensor
+                                    MQTTSNPacket pubackPacket = new MQTTSNPacket();
+                                    pubackPacket.setPUBACK(topicId, messageId, 0x00);
+                                    encapsulateAndSendToGW(waitingPubAckMap.remove(mqttsnPacket), pubackPacket);
+                                }
+        
+                                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                                    // Kalo gagal dapet balesan dari broker.
+                                    MQTTSNPacket pubackPacket = new MQTTSNPacket();
+                                    pubackPacket.setPUBACK(topicId, messageId, 0x01);
+                                    encapsulateAndSendToGW(waitingPubAckMap.remove(mqttsnPacket), pubackPacket);
+                                }
+                            };
+                            token = client.publish(topicName, message, null, pubListener);
+                        } else { //Tidak implementasi QoS 2 dan -1
                             message.setQos(0);
+                            token = client.publish(topicName, message);
                         }
-                        
-                        token = client.publish(topicName, message);
-                        token.waitForCompletion();
-                        if (qosBits == 1){
-                            MQTTSNPacket pubackPacket = new MQTTSNPacket();
-                            pubackPacket.setPUBACK(topicId, messageId, 0x00);
-                            sendToGatewayPreon32(MQTTSNPacket.toEncapsulatedMessage(waitingPubAckMap.remove(mqttsnPacket), pubackPacket.toBytes()));
-                        } else {
-                            System.out.println("Message published with QoS 0, no PUBACK needed.");
-                        }
-                    } catch (Exception e){  
-                        System.err.println("Packet failed to send to broker: "+e);
+                    } catch (Exception e){
+                        System.err.println("Packet failed to process in aggregate loop: "+e);
                     }
-                    
                 }
             }
         }.start();
