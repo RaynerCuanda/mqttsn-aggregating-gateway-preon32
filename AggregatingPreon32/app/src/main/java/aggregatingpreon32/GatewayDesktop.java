@@ -22,8 +22,9 @@ import com.virtenio.commander.toolsets.preon32.Preon32Helper;
 public class GatewayDesktop {
     private int gatewayId = 0x0001;
     private String gatewayAddress = "0x0001";
-    private HashMap<String, Integer> nodeSensorMap = new HashMap<>();
-    private HashMap<Integer, String> topicMap = new HashMap<>();
+    private HashMap<String, Integer> nodeSensorMap = new HashMap<>(); // Client ID Key, Node Sensor Physical Address (WirelessNodeId) Value
+    private HashMap<Integer, String> topicMap = new HashMap<>(); //Topid ID  key, Topic name Value
+    private HashMap<String, Integer> topicReverseMap = new HashMap<>(); //Topid name key, Topic ID Value
     private HashMap<MQTTSNPacket, Integer> waitingPubAckMap = new HashMap<>();
     BlockingQueue<MQTTSNPacket> sendTaskQueue = new LinkedBlockingQueue<>();
 
@@ -150,21 +151,33 @@ public class GatewayDesktop {
                 sendToGatewayPreon32(packetToSend);
                 break;
             }
-            case MQTTSNPacket.REGISTER:{ //TO DO: Jika topik sudah pernah di register, langsung return aja jangan bikin baru (Harus bikin map value, key?)
-                System.out.println("Gateway received a REGISTER message");
-                int topicId = topicIdIncrement;
-                increaseTopicId();
-                int msgId = ((mqttsnPacket.getMsgVariablePart()[2] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[3] & 0xFF);
-
-                int topicNameLength = mqttsnPacket.getMsgHeader()[0]-6;
-                byte[] tempName = new byte[topicNameLength];
-                System.arraycopy(mqttsnPacket.getMsgVariablePart(), 4, tempName, 0, topicNameLength);
-                String topicName = new String(tempName);
-
-                topicMap.put(topicId, topicName);
-                response.setREGACK(topicId, msgId, 0x00); //Success
-                byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, response.toBytes());
-                sendToGatewayPreon32(packetToSend);
+            case MQTTSNPacket.REGISTER:{
+                if (nodeSensorMap.containsValue(wirelessNodeId)){ 
+                    System.out.println("Gateway received a REGISTER message");
+    
+                    int topicId;
+                    int msgId = ((mqttsnPacket.getMsgVariablePart()[2] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[3] & 0xFF);
+    
+                    int topicNameLength = mqttsnPacket.getMsgHeader()[0]-6;
+                    byte[] tempName = new byte[topicNameLength];
+                    System.arraycopy(mqttsnPacket.getMsgVariablePart(), 4, tempName, 0, topicNameLength);
+                    String topicName = new String(tempName);
+    
+                    if (topicMap.containsValue(topicName)){
+                        topicId = topicReverseMap.get(topicName);
+                    } else { // Kalo belum pernah di daftarin
+                        topicId = topicIdIncrement;
+                        increaseTopicId();
+                        topicMap.put(topicId, topicName);
+                    }
+                    response.setREGACK(topicId, msgId, 0x00); //Success
+                    byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, response.toBytes());
+                    sendToGatewayPreon32(packetToSend);
+                } else{ // Kalo belum ada di map, suruh DISCONNECT
+                    response.setDISCONNECT();
+                    byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, response.toBytes());
+                    sendToGatewayPreon32(packetToSend);
+                }
                 break;
             }
             case MQTTSNPacket.PUBLISH:{

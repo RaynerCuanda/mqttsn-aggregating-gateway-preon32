@@ -165,6 +165,14 @@ public class NodeSensor {
 					System.out.println("Gateway REJECTED: unknown reason");
 				}
 				break;
+			case MQTTSNPacket.DISCONNECT:
+				isConnected = false; 
+				BASESTATION_ADDR = 0x00;
+				tempTopicId = 0;
+				humTopicId = 0;
+				airTopicId = 0;
+				accTopicId = 0;
+				break;
 		}
 	}
 
