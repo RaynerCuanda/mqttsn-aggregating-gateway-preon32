@@ -1,9 +1,9 @@
 public class PublishHelper {
-    public MQTTSNPacket publishPacket;
-    public long timeSend;
+    public MQTTSNPacket mqttMessage;
+    public long timeSent;
 
-    public PublishHelper(MQTTSNPacket publishPacket, long timeSend) {
-        this.publishPacket = publishPacket;
-        this. timeSend = timeSend;
+    public PublishHelper(MQTTSNPacket mqttMessage, long timeSent) {
+        this.mqttMessage = mqttMessage;
+        this. timeSent = timeSent;
     }
 }

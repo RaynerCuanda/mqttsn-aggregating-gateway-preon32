@@ -149,7 +149,7 @@ public class NodeSensor {
 				handleREGACK(packet);
 				break;
 			case MQTTSNPacket.PUBACK:
-				System.out.println("Node Sensor received a PUBACK message");
+				System.out.println("Node Sensor received a PUBACK message, Return Code: " + packet.getMsgVariablePart()[4]);
 				//Return Code 0x02 (TopicId Invalid)
 				if (packet.getMsgVariablePart()[4] == 0x02){ 
 					int topicId = ((packet.getMsgVariablePart()[0] & 0xFF) << 8) | (packet.getMsgVariablePart()[1] & 0xFF);
@@ -167,7 +167,6 @@ public class NodeSensor {
 					// Ilangin dari map, karena udah di acknowledge sama gateway
 					int messageId = ((packet.getMsgVariablePart()[2] & 0xFF) << 8) | (packet.getMsgVariablePart()[3] & 0xFF);
 					pubAckHashMap.remove(messageId);
-					
 				} else {
 					System.out.println("Gateway REJECTED: unknown reason");
 				}
@@ -205,10 +204,10 @@ public class NodeSensor {
 		for (Integer i: pubAckHashMap.keySet()){
 			PublishHelper published = pubAckHashMap.get(i);
 
-			if (System.currentTimeMillis() - published.timeSend> PUBACK_TIMEOUT){
-				send(published.publishPacket, BASESTATION_ADDR);
+			if (System.currentTimeMillis() - published.timeSent > PUBACK_TIMEOUT){
+				send(published.mqttMessage, BASESTATION_ADDR);
 
-				published.timeSend = System.currentTimeMillis();
+				published.timeSent = System.currentTimeMillis();
 			}
 		}
 	}
