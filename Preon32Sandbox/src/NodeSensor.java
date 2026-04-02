@@ -26,25 +26,29 @@ public class NodeSensor {
 	private int BASESTATION_ADDR; // ALAMAT TUJUAN BASE STATION (AWAL BELUM DI ISI NILAI SEBELUM SEARCHGW)
 	private int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
 	
-	private long timeLastReceive;
-	private long durationConnectionTime;
-	private long registerSentTime;
-	private boolean isConnected = false;
-	private HashMap<Integer, MQTTSNPacket> RegAckHashMap = new HashMap<Integer, MQTTSNPacket>();
-	private HashMap<Integer, PublishHelper> pubAckHashMap = new HashMap<Integer, PublishHelper>();
-	private int currentRegisterId = 0;
-	private long REGISTER_TIMEOUT = 10 * 1000; // seconds
-	private int registerCounter = 1;
-	private int pubAckCounter = 1;
-	private long PUBACK_TIMEOUT = 10 * 1000; //
+	// Modifiedable
+	private long REGISTER_TIMEOUT = 10 * 1000; // 10s
+	private long PUBACK_TIMEOUT = 10 * 1000; // 10s
+	private int MAX_PUBACK_RETRY = 10;
 	
-	private AT86RF231 radio;
-	private FrameIO fio;
-
 	private final String tempTopic ="9017/Temperature";
 	private final String humTopic = "9017/Humidity";
 	private final String airTopic = "9017/AirPressure";
 	private final String accTopic = "9017/Vibration";
+	 
+	private boolean isConnected = false;
+	private long timeLastReceive;
+	private long durationConnectionTime;
+	private long registerSentTime;
+	private int currentRegisterId = 0;
+	private int registerCounter = 1;
+	private int pubAckCounter = 1;
+	private HashMap<Integer, MQTTSNPacket> RegAckHashMap = new HashMap<Integer, MQTTSNPacket>();
+	private HashMap<Integer, PublishHelper> pubAckHashMap = new HashMap<Integer, PublishHelper>();
+	
+	private AT86RF231 radio;
+	private FrameIO fio;
+
 	private int tempTopicId;
 	private int humTopicId;
 	private int airTopicId;
@@ -167,6 +171,16 @@ public class NodeSensor {
 					// Ilangin dari map, karena udah di acknowledge sama gateway
 					int messageId = ((packet.getMsgVariablePart()[2] & 0xFF) << 8) | (packet.getMsgVariablePart()[3] & 0xFF);
 					pubAckHashMap.remove(messageId);
+				} else if (packet.getMsgVariablePart()[4] == 0x01) {
+					System.out.println("Gateway REJECTED: CONGESTION");
+					int messageId = ((packet.getMsgVariablePart()[2] & 0xFF) << 8) | (packet.getMsgVariablePart()[3] & 0xFF);
+					PublishHelper published = pubAckHashMap.get(messageId);
+					if (published != null){
+						send(published.mqttsnMessage, BASESTATION_ADDR);
+						published.timeSent = System.currentTimeMillis();
+						System.out.println("Resending Publish with Message ID: "+messageId);
+						// Mungkin tambah nRetry, jumlah retry
+				}
 				} else {
 					System.out.println("Gateway REJECTED: unknown reason");
 				}
@@ -204,10 +218,21 @@ public class NodeSensor {
 		for (Integer i: pubAckHashMap.keySet()){
 			PublishHelper published = pubAckHashMap.get(i);
 
+			//TO DO: ganti ke iterate, atau cari cara lain supaya tidak error
+			if (published.counter > MAX_PUBACK_RETRY){
+				pubAckHashMap.remove(i);
+				break;
+			}
+
 			if (System.currentTimeMillis() - published.timeSent > PUBACK_TIMEOUT){
-				send(published.mqttMessage, BASESTATION_ADDR);
+				MQTTSNPacket packet = published.mqttsnMessage;
+				//bit modification supaya dup jadi true
+				byte flagsWithDup = (byte) (packet.getMsgVariablePart()[0] | 0x80);
+				packet.getMsgVariablePart()[0] = flagsWithDup;
+				send(published.mqttsnMessage, BASESTATION_ADDR);
 
 				published.timeSent = System.currentTimeMillis();
+				published.counter++;
 			}
 		}
 	}
@@ -301,6 +326,8 @@ public class NodeSensor {
 		if (humTopicId == 0) {
 			handleRegister(humTopic, humTopicId); // Supaya kalo gateway timeout ga register 
 		} else {
+			// Contoh pesan Publish dengan QoS 0
+			
 			// String payload = sensor.getHumidityValue();
 			// MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 			// mqttsnPacket.setPUBLISH(false, 0, true, 0x00, humTopicId, 0, payload);
@@ -311,12 +338,12 @@ public class NodeSensor {
 			String payload = sensor.getHumidityValue();
 			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 			mqttsnPacket.setPUBLISH(false, 1, true, 0x00, humTopicId, pubAckCounter, payload);
-			pubAckCounter++; // TO DO: nanti ubah jadi increasePubAckCounter biar ga overflow (Klo > 65535)
-
+			
 			PublishHelper pub = new PublishHelper(mqttsnPacket, System.currentTimeMillis());
 			pubAckHashMap.put(pubAckCounter, pub);
-
+			
 			send(mqttsnPacket, BASESTATION_ADDR);
+			increasePuBackCounter();
 			System.out.println("Publishing Humidity");
 		}
 	}
@@ -380,5 +407,12 @@ public class NodeSensor {
 			}
 		}
 	}
+
+	private void increasePuBackCounter(){
+        pubAckCounter++;
+        if (this.pubAckCounter > 65535){
+                this.pubAckCounter = 1;
+        } 
+    }
 }
 

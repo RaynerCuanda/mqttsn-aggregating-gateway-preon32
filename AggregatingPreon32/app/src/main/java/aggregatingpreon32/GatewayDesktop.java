@@ -105,7 +105,7 @@ public class GatewayDesktop {
                         byte[] encapsulatedMessage = new byte[byteLength];
                         
                         System.arraycopy(incomingByte, 0, encapsulatedMessage, 0, byteLength);
-                        if ((encapsulatedMessage[1] & 0xFF)  == 0xFE){ // Kalo msgType = 0xFE (EncapsulatedMessage)
+                        if ((encapsulatedMessage[1] & 0xFF)  == MQTTSNPacket.ENCAPSULATED_MESSAGE){ // Kalo msgType = 0xFE (EncapsulatedMessage)
                             handleEncapsulatedMessage(encapsulatedMessage);
                         }
 
@@ -131,12 +131,8 @@ public class GatewayDesktop {
         byte[] mqttsnPacketByte = new byte[encapsulatedMessage.length - lenNotMQTTSN];
         System.arraycopy(encapsulatedMessage, lenNotMQTTSN, mqttsnPacketByte, 0, encapsulatedMessage.length-lenNotMQTTSN);   
 
-
         MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
         mqttsnPacket.toMQTTSN(mqttsnPacketByte);
-
-        // System.out.println("Received Packet: "+java.util.Arrays.toString(encapsulatedMessage)); // +++
-        // System.out.println("Received packet from wireless node id: "+wirelessNodeId+", with message type: "+mqttsnPacket.getMsgType());
 
         MQTTSNPacket response = new MQTTSNPacket();
         switch (mqttsnPacket.getMsgType() & 0xFF){
@@ -175,6 +171,7 @@ public class GatewayDesktop {
                         topicId = topicIdIncrement;
                         increaseTopicId();
                         topicMap.put(topicId, topicName);
+                        topicReverseMap.put(topicName, topicId);
                     }
                     response.setREGACK(topicId, msgId, 0x00); //Success
                     encapsulateAndSendToGW(wirelessNodeId, response);
@@ -197,6 +194,7 @@ public class GatewayDesktop {
                         System.out.println("Gateway received a PUBLISH message"+ topicName+" with topic id: "+topicId);
                         sendTaskQueue.add(mqttsnPacket);
                         int messageId = mqttsnPacket.getMsgVariablePart()[3] << 8 | mqttsnPacket.getMsgVariablePart()[4];
+                        //Kalo Messaage ID != 0, artinya butuh alamat node sensor untuk dikirimin PUBACK
                         if (messageId != 0){
                             waitingPubAckMap.put(mqttsnPacket, wirelessNodeId);
                         }
@@ -209,11 +207,6 @@ public class GatewayDesktop {
             }
             case 0x14:{
                 System.out.println("unhandled: Wireless Node Id > 2"); // kode 0x14 untuk debug Preon32Gateway(Tidak sesuai spec)
-                break;
-            }
-            case MQTTSNPacket.PUBACK:{
-                // TO DO:
-                System.out.println("Gateway received a PUBACK message, but currently not handled by gateway");
                 break;
             }
             default:{

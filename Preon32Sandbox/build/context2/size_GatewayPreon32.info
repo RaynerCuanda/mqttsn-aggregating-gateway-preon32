@@ -171,7 +171,7 @@
 	3		isDataPending()Z
 	2		getBuffer()[B
 
-1456		MQTTSNPacket
+1479		MQTTSNPacket
 	257		setPUBLISH(ZIZIIILjava/lang/String;)V
 	205		setSUBSCRIBE(ZIIII)V
 	165		setSUBSCRIBE(ZIIILjava/lang/String;)V
@@ -187,6 +187,7 @@
 	42		toBytes()[B
 	33		setSEARCHGW(I)V
 	33		setCONNACK(I)V
+	23		setDISCONNECT()V
 	15		getMsgType()B
 	11		<init>()V
 	2		getMsgHeader()[B
