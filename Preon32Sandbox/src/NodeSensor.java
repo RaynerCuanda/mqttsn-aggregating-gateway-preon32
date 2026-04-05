@@ -158,7 +158,7 @@ public class NodeSensor {
 				System.out.println("Node Sensor received a PUBACK message, Return Code: " + packet.getMsgVariablePart()[4]);
 				//Return Code 0x02 (TopicId Invalid)
 				switch(packet.getMsgVariablePart()[4]){
-					case 0x02:
+					case 0x02:{
 						int topicId = ((packet.getMsgVariablePart()[0] & 0xFF) << 8) | (packet.getMsgVariablePart()[1] & 0xFF);
 						if(tempTopicId == topicId){
 							tempTopicId = 0;
@@ -170,13 +170,15 @@ public class NodeSensor {
 							accTopicId = 0;	
 						}
 						break;
-					case 0x00:
+					}
+					case 0x00:{
 						System.out.println("Gateway ACCEPTED: PUBLISH");
 						// Ilangin dari map, karena udah di acknowledge sama gateway
 						int messageId = ((packet.getMsgVariablePart()[2] & 0xFF) << 8) | (packet.getMsgVariablePart()[3] & 0xFF);
 						pubAckHashMap.remove(messageId);
 						break;
-					case 0x01:
+					}
+					case 0x01:{
 						System.out.println("Gateway REJECTED: CONGESTION");
 						int messageId = ((packet.getMsgVariablePart()[2] & 0xFF) << 8) | (packet.getMsgVariablePart()[3] & 0xFF);
 						PublishHelper published = pubAckHashMap.get(messageId);
@@ -198,6 +200,7 @@ public class NodeSensor {
 							}
 						}
 						break;
+					}
 					default:
 						System.out.println("Unknown Reason");
 
