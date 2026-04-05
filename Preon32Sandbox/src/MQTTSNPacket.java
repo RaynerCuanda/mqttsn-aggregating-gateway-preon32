@@ -23,15 +23,15 @@ public class MQTTSNPacket {
     // public static final byte PUBREL = 0x0F;
     // public static final byte PUBCOMP = 0x10;
 
-   public static final byte SUBSCRIBE = 0x12; // Done, not yet test. !Delete this?
-   public static final byte SUBACK = 0x13; // Done, not yet test !Delete this?
+//    public static final byte SUBSCRIBE = 0x12; // Done, not yet test. !Delete this?
+//    public static final byte SUBACK = 0x13; // Done, not yet test !Delete this?
     // public static final byte UNSUBSCRIBE = 0x14;
     // public static final byte UNSUBACK = 0x15;
     // public static final byte PINGREQ = 0x16;
     // public static final byte PINGRESP = 0x17;
     public static final byte DISCONNECT = 0x18;
 
-    private int keepAliveTime = 90; // seconds
+    private int keepAliveTime = 90; // seconds * DEFAULT TIME FOR ADVERTISE, CONNECT (CHANGEABLE)
 
     private static final byte flags_topicIdType_normal      = (byte) 0x00;
     private static final byte flags_topicIdType_pre         = (byte) 0x01;
@@ -263,116 +263,116 @@ public class MQTTSNPacket {
         this.msgVariablePart[4] = (byte) returnCode; 
     }
 
-    public void setSUBSCRIBE(boolean dup, int qos, int topicIdType, int msgId, int topicId){
-        int headerLength = 1 + 1; // Length (0), MsgType (1)
-        int msgVariablePartLength = 1 + 2 + 2 ; // flags (0), msgId (1:2), topicId(3:4)
+    // public void setSUBSCRIBE(boolean dup, int qos, int topicIdType, int msgId, int topicId){
+    //     int headerLength = 1 + 1; // Length (0), MsgType (1)
+    //     int msgVariablePartLength = 1 + 2 + 2 ; // flags (0), msgId (1:2), topicId(3:4)
         
-        this.msgHeader = new byte[headerLength];
-        this.msgVariablePart = new byte[msgVariablePartLength];
+    //     this.msgHeader = new byte[headerLength];
+    //     this.msgVariablePart = new byte[msgVariablePartLength];
         
-        this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
-        this.msgHeader[1] = SUBSCRIBE;
+    //     this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
+    //     this.msgHeader[1] = SUBSCRIBE;
 
-        byte flags = (byte)0x00;
-        if(dup){
-            flags |= flags_DUP;
-        }
-        if (qos == 0){
-            flags |= flags_QoS_0;
-        } else if (qos == 1){
-            flags |= flags_QoS_1;
-        } else if (qos == 2){
-            flags |= flags_QoS_2;
-        } else if (qos == -1){
-            flags |= flags_QoS_min1;
-        }
+    //     byte flags = (byte)0x00;
+    //     if(dup){
+    //         flags |= flags_DUP;
+    //     }
+    //     if (qos == 0){
+    //         flags |= flags_QoS_0;
+    //     } else if (qos == 1){
+    //         flags |= flags_QoS_1;
+    //     } else if (qos == 2){
+    //         flags |= flags_QoS_2;
+    //     } else if (qos == -1){
+    //         flags |= flags_QoS_min1;
+    //     }
         
-        if (topicIdType<=3 && topicIdType>=0){
-            if (topicIdType == 0){
-                flags |= flags_topicIdType_normal;
-            } else if (topicIdType == 1){
-                flags |= flags_topicIdType_pre;
-            } else if (topicIdType == 2){
-                flags |= flags_topicIdType_short;
-            } else {
-                flags |= flags_topicIdType_reserved;
-            }
-        } else{
-            throw new IllegalArgumentException("Invalid topicIdType");
-        }
-        this.msgVariablePart[0] = flags; 
-        this.msgVariablePart[1] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
-        this.msgVariablePart[2] = (byte) (msgId & 0xFF);        // Low Byte (LSB)
-        this.msgVariablePart[3] = (byte) ((topicId >> 8) & 0xFF);
-        this.msgVariablePart[4] = (byte) (topicId & 0xFF);
-    }
+    //     if (topicIdType<=3 && topicIdType>=0){
+    //         if (topicIdType == 0){
+    //             flags |= flags_topicIdType_normal;
+    //         } else if (topicIdType == 1){
+    //             flags |= flags_topicIdType_pre;
+    //         } else if (topicIdType == 2){
+    //             flags |= flags_topicIdType_short;
+    //         } else {
+    //             flags |= flags_topicIdType_reserved;
+    //         }
+    //     } else{
+    //         throw new IllegalArgumentException("Invalid topicIdType");
+    //     }
+    //     this.msgVariablePart[0] = flags; 
+    //     this.msgVariablePart[1] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
+    //     this.msgVariablePart[2] = (byte) (msgId & 0xFF);        // Low Byte (LSB)
+    //     this.msgVariablePart[3] = (byte) ((topicId >> 8) & 0xFF);
+    //     this.msgVariablePart[4] = (byte) (topicId & 0xFF);
+    // }
 
-    public void setSUBSCRIBE(boolean dup, int qos, int topicIdType, int msgId, String topicName){
-        int headerLength = 1 + 1; // Length (0), MsgType (1)
-        byte[] topicNameBytes = topicName.getBytes();
-        int msgVariablePartLength = 1 + 2 + topicNameBytes.length ; // flags (0), msgId (1:2), topicName(3:n)
+    // public void setSUBSCRIBE(boolean dup, int qos, int topicIdType, int msgId, String topicName){
+    //     int headerLength = 1 + 1; // Length (0), MsgType (1)
+    //     byte[] topicNameBytes = topicName.getBytes();
+    //     int msgVariablePartLength = 1 + 2 + topicNameBytes.length ; // flags (0), msgId (1:2), topicName(3:n)
         
-        this.msgHeader = new byte[headerLength];
-        this.msgVariablePart = new byte[msgVariablePartLength];
+    //     this.msgHeader = new byte[headerLength];
+    //     this.msgVariablePart = new byte[msgVariablePartLength];
         
-        this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
-        this.msgHeader[1] = SUBSCRIBE;
+    //     this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
+    //     this.msgHeader[1] = SUBSCRIBE;
 
-        byte flags = (byte) 0x00;
-        if(dup){
-            flags |= flags_DUP;
-        }
-        if (qos == 0){
-            flags |= flags_QoS_0;
-        } else if (qos == 1){
-            flags |= flags_QoS_1;
-        } else if (qos == 2){
-            flags |= flags_QoS_2;
-        } else if (qos == -1){
-            flags |= flags_QoS_min1;
-        }
+    //     byte flags = (byte) 0x00;
+    //     if(dup){
+    //         flags |= flags_DUP;
+    //     }
+    //     if (qos == 0){
+    //         flags |= flags_QoS_0;
+    //     } else if (qos == 1){
+    //         flags |= flags_QoS_1;
+    //     } else if (qos == 2){
+    //         flags |= flags_QoS_2;
+    //     } else if (qos == -1){
+    //         flags |= flags_QoS_min1;
+    //     }
         
-        if (topicIdType<=3){
-            byte tempTopicIdType = (byte) topicIdType;
-            flags |= tempTopicIdType;
-        } else{
-            throw new IllegalArgumentException("Invalid topicIdType");
-        }
-        this.msgVariablePart[0] = flags;
-        this.msgVariablePart[1] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
-        this.msgVariablePart[2] = (byte) (msgId & 0xFF);        // Low Byte (LSB)
-        System.arraycopy(topicNameBytes, 0, msgVariablePart, 3, topicNameBytes.length);  
-    }
+    //     if (topicIdType<=3){
+    //         byte tempTopicIdType = (byte) topicIdType;
+    //         flags |= tempTopicIdType;
+    //     } else{
+    //         throw new IllegalArgumentException("Invalid topicIdType");
+    //     }
+    //     this.msgVariablePart[0] = flags;
+    //     this.msgVariablePart[1] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
+    //     this.msgVariablePart[2] = (byte) (msgId & 0xFF);        // Low Byte (LSB)
+    //     System.arraycopy(topicNameBytes, 0, msgVariablePart, 3, topicNameBytes.length);  
+    // }
 
-    public void setSUBACK(int qos, int topicId, int msgId, int returnCode){
-        int headerLength = 1 + 1; // Length (0), MsgType (1)
-        int msgVariablePartLength = 1 + 2 + 2 + 1 ; // flags (0), topicId (1:2), msgId(3:4), returnCode(5)
+    // public void setSUBACK(int qos, int topicId, int msgId, int returnCode){
+    //     int headerLength = 1 + 1; // Length (0), MsgType (1)
+    //     int msgVariablePartLength = 1 + 2 + 2 + 1 ; // flags (0), topicId (1:2), msgId(3:4), returnCode(5)
         
-        this.msgHeader = new byte[headerLength];
-        this.msgVariablePart = new byte[msgVariablePartLength];
+    //     this.msgHeader = new byte[headerLength];
+    //     this.msgVariablePart = new byte[msgVariablePartLength];
         
-        this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
-        this.msgHeader[1] = SUBACK;
+    //     this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
+    //     this.msgHeader[1] = SUBACK;
 
-        byte flags = (byte) 0x00;
+    //     byte flags = (byte) 0x00;
 
-        if (qos == 0){
-            flags |= flags_QoS_0;
-        } else if (qos == 1){
-            flags |= flags_QoS_1;
-        } else if (qos == 2){
-            flags |= flags_QoS_2;
-        } else if (qos == -1){
-            flags |= flags_QoS_min1;
-        }
+    //     if (qos == 0){
+    //         flags |= flags_QoS_0;
+    //     } else if (qos == 1){
+    //         flags |= flags_QoS_1;
+    //     } else if (qos == 2){
+    //         flags |= flags_QoS_2;
+    //     } else if (qos == -1){
+    //         flags |= flags_QoS_min1;
+    //     }
 
-        this.msgVariablePart[0] = flags; 
-        this.msgVariablePart[1] = (byte) ((topicId >> 8) & 0xFF); // High Byte (MSB)
-        this.msgVariablePart[2] = (byte) (topicId & 0xFF);        // Low Byte (LSB)
-        this.msgVariablePart[3] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
-        this.msgVariablePart[4] = (byte) (msgId & 0xFF);        // Low Byte (LSB)
-        this.msgVariablePart[5] = (byte) returnCode;
-    }
+    //     this.msgVariablePart[0] = flags; 
+    //     this.msgVariablePart[1] = (byte) ((topicId >> 8) & 0xFF); // High Byte (MSB)
+    //     this.msgVariablePart[2] = (byte) (topicId & 0xFF);        // Low Byte (LSB)
+    //     this.msgVariablePart[3] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
+    //     this.msgVariablePart[4] = (byte) (msgId & 0xFF);        // Low Byte (LSB)
+    //     this.msgVariablePart[5] = (byte) returnCode;
+    // }
 
     public void setDISCONNECT(){
         int headerLength = 1 + 1; // Length (0), MsgType (1)

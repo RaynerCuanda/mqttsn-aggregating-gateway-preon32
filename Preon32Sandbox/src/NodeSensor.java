@@ -8,6 +8,8 @@
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import com.virtenio.driver.device.at86rf231.AT86RF231;
 import com.virtenio.driver.device.at86rf231.AT86RF231RadioDriver;
@@ -155,34 +157,50 @@ public class NodeSensor {
 			case MQTTSNPacket.PUBACK:
 				System.out.println("Node Sensor received a PUBACK message, Return Code: " + packet.getMsgVariablePart()[4]);
 				//Return Code 0x02 (TopicId Invalid)
-				if (packet.getMsgVariablePart()[4] == 0x02){ 
-					int topicId = ((packet.getMsgVariablePart()[0] & 0xFF) << 8) | (packet.getMsgVariablePart()[1] & 0xFF);
-					if(tempTopicId == topicId){
-						tempTopicId = 0;
-					} else if(humTopicId == topicId){
-						humTopicId = 0;
-					} else if(airTopicId == topicId){
-						airTopicId = 0;
-					} else if(accTopicId == topicId){
-						accTopicId = 0;	
-					}
-				} else if (packet.getMsgVariablePart()[4] == 0x00){ // Return Code 0x00 (Accepted)
-					System.out.println("Gateway ACCEPTED: PUBLISH");
-					// Ilangin dari map, karena udah di acknowledge sama gateway
-					int messageId = ((packet.getMsgVariablePart()[2] & 0xFF) << 8) | (packet.getMsgVariablePart()[3] & 0xFF);
-					pubAckHashMap.remove(messageId);
-				} else if (packet.getMsgVariablePart()[4] == 0x01) {
-					System.out.println("Gateway REJECTED: CONGESTION");
-					int messageId = ((packet.getMsgVariablePart()[2] & 0xFF) << 8) | (packet.getMsgVariablePart()[3] & 0xFF);
-					PublishHelper published = pubAckHashMap.get(messageId);
-					if (published != null){
-						send(published.mqttsnMessage, BASESTATION_ADDR);
-						published.timeSent = System.currentTimeMillis();
-						System.out.println("Resending Publish with Message ID: "+messageId);
-						// Mungkin tambah nRetry, jumlah retry
-				}
-				} else {
-					System.out.println("Gateway REJECTED: unknown reason");
+				switch(packet.getMsgVariablePart()[4]){
+					case 0x02:
+						int topicId = ((packet.getMsgVariablePart()[0] & 0xFF) << 8) | (packet.getMsgVariablePart()[1] & 0xFF);
+						if(tempTopicId == topicId){
+							tempTopicId = 0;
+						} else if(humTopicId == topicId){
+							humTopicId = 0;
+						} else if(airTopicId == topicId){
+							airTopicId = 0;
+						} else if(accTopicId == topicId){
+							accTopicId = 0;	
+						}
+						break;
+					case 0x00:
+						System.out.println("Gateway ACCEPTED: PUBLISH");
+						// Ilangin dari map, karena udah di acknowledge sama gateway
+						int messageId = ((packet.getMsgVariablePart()[2] & 0xFF) << 8) | (packet.getMsgVariablePart()[3] & 0xFF);
+						pubAckHashMap.remove(messageId);
+						break;
+					case 0x01:
+						System.out.println("Gateway REJECTED: CONGESTION");
+						int messageId = ((packet.getMsgVariablePart()[2] & 0xFF) << 8) | (packet.getMsgVariablePart()[3] & 0xFF);
+						PublishHelper published = pubAckHashMap.get(messageId);
+						
+						if (published != null){
+							if (published.counter > MAX_PUBACK_RETRY){
+								System.out.println("Max Puback Reached, removing from hashmap..");
+								pubAckHashMap.remove(messageId);
+							} else {
+								//bit modification supaya dup jadi true
+								byte flagsWithDup = (byte) (published.mqttsnMessage.getMsgVariablePart()[0] | 0x80);
+								published.mqttsnMessage.getMsgVariablePart()[0] = flagsWithDup;
+		
+								send(published.mqttsnMessage, BASESTATION_ADDR);
+		
+								published.timeSent = System.currentTimeMillis();
+								published.counter++;
+								System.out.println("Resending Publish with Message ID: "+messageId);
+							}
+						}
+						break;
+					default:
+						System.out.println("Unknown Reason");
+
 				}
 				break;
 			case MQTTSNPacket.DISCONNECT:
@@ -214,14 +232,17 @@ public class NodeSensor {
         }
 	}
 
+	//https://stackoverflow.com/questions/1884889/iterating-over-and-removing-from-a-map
 	private void handlePubAckTimeOut(){
-		for (Integer i: pubAckHashMap.keySet()){
-			PublishHelper published = pubAckHashMap.get(i);
+		Iterator<Integer> pubAckIterator = pubAckHashMap.keySet().iterator();
 
-			//TO DO: ganti ke iterate, atau cari cara lain supaya tidak error
+		while(pubAckIterator.hasNext()){
+			Integer key = pubAckIterator.next();
+			PublishHelper published = pubAckHashMap.get(key);
+			
 			if (published.counter > MAX_PUBACK_RETRY){
-				pubAckHashMap.remove(i);
-				break;
+				pubAckIterator.remove();
+				continue;	
 			}
 
 			if (System.currentTimeMillis() - published.timeSent > PUBACK_TIMEOUT){
@@ -235,6 +256,28 @@ public class NodeSensor {
 				published.counter++;
 			}
 		}
+		//Versi for each 
+
+		// for (Integer i: pubAckHashMap.keySet()){
+		// 	PublishHelper published = pubAckHashMap.get(i);
+
+		// 	//TO DO: ganti ke iterate, atau cari cara lain supaya tidak error
+		// 	if (published.counter > MAX_PUBACK_RETRY){
+		// 		pubAckHashMap.remove(i);
+		// 		break;
+		// 	}
+
+		// 	if (System.currentTimeMillis() - published.timeSent > PUBACK_TIMEOUT){
+		// 		MQTTSNPacket packet = published.mqttsnMessage;
+		// 		//bit modification supaya dup jadi true
+		// 		byte flagsWithDup = (byte) (packet.getMsgVariablePart()[0] | 0x80);
+		// 		packet.getMsgVariablePart()[0] = flagsWithDup;
+		// 		send(published.mqttsnMessage, BASESTATION_ADDR);
+
+		// 		published.timeSent = System.currentTimeMillis();
+		// 		published.counter++;
+		// 	}
+		// }
 	}
 
 	private void handleREGACK(MQTTSNPacket mqttsnPacket){
