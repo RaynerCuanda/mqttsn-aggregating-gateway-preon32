@@ -9,16 +9,16 @@ header {
 	interfacePoolOffset 528
 	implementsPoolOffset 556
 	methodPoolOffset 616
-	codePoolOffset 8120
-	stringPoolOffset 7900
+	codePoolOffset 8084
+	stringPoolOffset 7864
 	mainMethodIndex 0
 	staticPrimitiveFieldCount 0
 	staticReferenceFieldCount 7
 	classCount 58
 	interfaceCount 13
 	implementsCount 15
-	methodCount 607
-	codePoolSize 17539
+	methodCount 604
+	codePoolSize 17035
 	stringCount 24
 }
 classes [
@@ -2303,7 +2303,7 @@ classes [
 		superIndex 60
 		superImportIndex 0
 		implementsStart -1
-		methodCount 20
+		methodCount 17
 		methodStart 522
 		superName java/lang/Object
 		instanceFieldCount 3
@@ -2340,7 +2340,7 @@ classes [
 		superImportIndex -1
 		implementsStart 12
 		methodCount 25
-		methodStart 542
+		methodStart 539
 		superName com/virtenio/driver/NativeDeviceDriver
 		instanceFieldCount 5
 		flags 49
@@ -2383,7 +2383,7 @@ classes [
 		superImportIndex 0
 		implementsStart -1
 		methodCount 4
-		methodStart 567
+		methodStart 564
 		superName java/io/OutputStream
 		instanceFieldCount 1
 		flags 32
@@ -2407,7 +2407,7 @@ classes [
 		superImportIndex -1
 		implementsStart -1
 		methodCount 4
-		methodStart 571
+		methodStart 568
 		superName com/virtenio/driver/InstanceManager
 		instanceFieldCount 1
 		flags 48
@@ -2431,7 +2431,7 @@ classes [
 		superImportIndex 0
 		implementsStart -1
 		methodCount 4
-		methodStart 575
+		methodStart 572
 		superName java/io/InputStream
 		instanceFieldCount 1
 		flags 32
@@ -2455,7 +2455,7 @@ classes [
 		superImportIndex -1
 		implementsStart -1
 		methodCount 8
-		methodStart 579
+		methodStart 576
 		superName com/virtenio/radio/ieee_802_15_4/FrameIO
 		instanceFieldCount 5
 		flags 33
@@ -2497,7 +2497,7 @@ classes [
 		superImportIndex 0
 		implementsStart -1
 		methodCount 2
-		methodStart 587
+		methodStart 584
 		superName java/io/InterruptedIOException
 		instanceFieldCount 4
 		flags 33
@@ -2539,7 +2539,7 @@ classes [
 		superImportIndex 0
 		implementsStart 13
 		methodCount 14
-		methodStart 589
+		methodStart 586
 		superName java/lang/Object
 		instanceFieldCount 4
 		flags 49
@@ -2582,7 +2582,7 @@ classes [
 		superImportIndex 0
 		implementsStart 14
 		methodCount 4
-		methodStart 603
+		methodStart 600
 		superName java/lang/Object
 		instanceFieldCount 2
 		flags 32
@@ -24576,731 +24576,6 @@ methods [
 	}
 	{
 		index 535
-		signature setSUBSCRIBE(ZIIII)V
-		definedIn MQTTSNPacket
-		signatureHash 32701
-		maxStack 4
-		maxLocals 9
-		exceptionCount 0
-		argsFieldCount 6
-		flags 64
-		codeLength 205
-		codeOffset 15249
-		getter1For -1
-		getter2For -1
-		localVars [
-			{
-				startPC 0
-				length 256
-				name this
-				descriptor LMQTTSNPacket;
-				index 0
-			}
-			{
-				startPC 0
-				length 256
-				name dup
-				descriptor Z
-				index 1
-			}
-			{
-				startPC 0
-				length 256
-				name qos
-				descriptor I
-				index 2
-			}
-			{
-				startPC 0
-				length 256
-				name topicIdType
-				descriptor I
-				index 3
-			}
-			{
-				startPC 0
-				length 256
-				name msgId
-				descriptor I
-				index 4
-			}
-			{
-				startPC 0
-				length 256
-				name topicId
-				descriptor I
-				index 5
-			}
-			{
-				startPC 2
-				length 253
-				name headerLength
-				descriptor I
-				index 6
-			}
-			{
-				startPC 4
-				length 250
-				name msgVariablePartLength
-				descriptor I
-				index 7
-			}
-			{
-				startPC 30
-				length 211
-				name flags
-				descriptor B
-				index 8
-			}
-		]
-		pcToLine {
-			0 267
-			2 268
-			4 270
-			10 271
-			16 273
-			23 274
-			28 276
-			30 277
-			34 278
-			40 280
-			44 281
-			52 282
-			57 283
-			66 284
-			71 285
-			80 286
-			85 287
-			91 290
-			100 291
-			104 292
-			112 293
-			117 294
-			125 295
-			130 296
-			138 298
-			146 301
-			158 303
-			162 304
-			174 305
-			183 306
-			195 307
-			204 308
-		}
-		pcTranslation {
-			0 0
-			1 1
-			3 2
-			4 3
-			6 4
-			7 4
-			9 6
-			11 8
-			14 10
-			15 10
-			17 12
-			19 14
-			22 16
-			23 16
-			26 17
-			27 18
-			29 18
-			31 20
-			32 21
-			33 22
-			34 23
-			35 23
-			38 24
-			39 25
-			41 27
-			42 28
-			43 29
-			45 30
-			46 31
-			49 34
-			51 35
-			53 37
-			54 38
-			55 39
-			57 40
-			58 41
-			61 44
-			63 45
-			64 46
-			65 47
-			66 48
-			68 49
-			71 52
-			72 53
-			73 54
-			76 57
-			78 58
-			80 60
-			81 61
-			82 62
-			84 63
-			87 66
-			88 67
-			89 68
-			92 71
-			94 72
-			96 74
-			97 75
-			98 76
-			100 77
-			103 80
-			104 81
-			105 82
-			108 85
-			110 86
-			112 88
-			113 89
-			114 90
-			116 91
-			117 92
-			118 93
-			121 96
-			122 97
-			125 100
-			126 101
-			129 104
-			131 105
-			132 106
-			133 107
-			134 108
-			136 109
-			139 112
-			140 113
-			141 114
-			144 117
-			146 118
-			147 119
-			148 120
-			149 121
-			151 122
-			154 125
-			155 126
-			156 127
-			159 130
-			161 131
-			162 132
-			163 133
-			164 134
-			166 135
-			169 138
-			171 139
-			172 140
-			173 141
-			174 142
-			176 143
-			179 146
-			182 146
-			183 150
-			185 153
-			188 157
-			189 158
-			190 158
-			193 159
-			194 160
-			196 161
-			197 162
-			198 162
-			201 163
-			202 164
-			204 165
-			206 167
-			207 168
-			210 171
-			211 172
-			212 173
-			213 174
-			214 174
-			217 175
-			218 176
-			220 177
-			223 180
-			224 181
-			225 182
-			226 183
-			227 183
-			230 184
-			231 185
-			233 186
-			235 188
-			236 189
-			239 192
-			240 193
-			241 194
-			242 195
-			243 195
-			246 196
-			247 197
-			249 198
-			252 201
-			253 202
-			254 203
-			255 204
-		}
-	}
-	{
-		index 536
-		signature setSUBSCRIBE(ZIIILjava/lang/String;)V
-		definedIn MQTTSNPacket
-		signatureHash 40397
-		maxStack 5
-		maxLocals 11
-		exceptionCount 0
-		argsFieldCount 6
-		flags 64
-		codeLength 165
-		codeOffset 15454
-		getter1For -1
-		getter2For -1
-		localVars [
-			{
-				startPC 109
-				length 8
-				name tempTopicIdType
-				descriptor B
-				index 10
-			}
-			{
-				startPC 0
-				length 209
-				name this
-				descriptor LMQTTSNPacket;
-				index 0
-			}
-			{
-				startPC 0
-				length 209
-				name dup
-				descriptor Z
-				index 1
-			}
-			{
-				startPC 0
-				length 209
-				name qos
-				descriptor I
-				index 2
-			}
-			{
-				startPC 0
-				length 209
-				name topicIdType
-				descriptor I
-				index 3
-			}
-			{
-				startPC 0
-				length 209
-				name msgId
-				descriptor I
-				index 4
-			}
-			{
-				startPC 0
-				length 209
-				name topicName
-				descriptor Ljava/lang/String;
-				index 5
-			}
-			{
-				startPC 2
-				length 206
-				name headerLength
-				descriptor I
-				index 6
-			}
-			{
-				startPC 8
-				length 199
-				name topicNameBytes
-				descriptor "[B"
-				index 7
-			}
-			{
-				startPC 13
-				length 192
-				name msgVariablePartLength
-				descriptor I
-				index 8
-			}
-			{
-				startPC 39
-				length 153
-				name flags
-				descriptor B
-				index 9
-			}
-		]
-		pcToLine {
-			0 311
-			2 312
-			8 313
-			13 315
-			19 316
-			25 318
-			32 319
-			37 321
-			39 322
-			43 323
-			49 325
-			53 326
-			61 327
-			66 328
-			75 329
-			80 330
-			89 331
-			94 332
-			100 335
-			105 336
-			109 337
-			114 338
-			117 339
-			129 341
-			133 342
-			145 343
-			154 344
-			164 345
-		}
-		pcTranslation {
-			0 0
-			1 1
-			3 2
-			5 3
-			8 7
-			10 8
-			11 9
-			13 10
-			14 11
-			15 12
-			17 13
-			18 13
-			20 15
-			22 17
-			25 19
-			26 19
-			28 21
-			30 23
-			33 25
-			34 25
-			37 26
-			38 27
-			40 27
-			42 29
-			43 30
-			44 31
-			45 32
-			46 32
-			49 33
-			50 34
-			52 36
-			53 37
-			54 38
-			56 39
-			57 40
-			60 43
-			62 44
-			64 46
-			65 47
-			66 48
-			68 49
-			69 50
-			72 53
-			74 54
-			75 55
-			76 56
-			77 57
-			79 58
-			82 61
-			83 62
-			84 63
-			87 66
-			89 67
-			91 69
-			92 70
-			93 71
-			95 72
-			98 75
-			99 76
-			100 77
-			103 80
-			105 81
-			107 83
-			108 84
-			109 85
-			111 86
-			114 89
-			115 90
-			116 91
-			119 94
-			121 95
-			123 97
-			124 98
-			125 99
-			127 100
-			128 101
-			129 102
-			132 105
-			133 106
-			134 107
-			136 109
-			138 109
-			140 111
-			141 112
-			142 113
-			144 114
-			147 117
-			150 117
-			151 121
-			153 124
-			156 128
-			157 129
-			158 129
-			161 130
-			162 131
-			164 132
-			165 133
-			166 133
-			169 134
-			170 135
-			172 136
-			174 138
-			175 139
-			178 142
-			179 143
-			180 144
-			181 145
-			182 145
-			185 146
-			186 147
-			188 148
-			191 151
-			192 152
-			193 153
-			194 154
-			196 155
-			197 156
-			198 156
-			201 157
-			202 158
-			204 159
-			205 160
-			208 164
-		}
-	}
-	{
-		index 537
-		signature setSUBACK(IIII)V
-		definedIn MQTTSNPacket
-		signatureHash 8929
-		maxStack 4
-		maxLocals 8
-		exceptionCount 0
-		argsFieldCount 5
-		flags 64
-		codeLength 134
-		codeOffset 15619
-		getter1For -1
-		getter2For -1
-		localVars [
-			{
-				startPC 0
-				length 177
-				name this
-				descriptor LMQTTSNPacket;
-				index 0
-			}
-			{
-				startPC 0
-				length 177
-				name qos
-				descriptor I
-				index 1
-			}
-			{
-				startPC 0
-				length 177
-				name topicId
-				descriptor I
-				index 2
-			}
-			{
-				startPC 0
-				length 177
-				name msgId
-				descriptor I
-				index 3
-			}
-			{
-				startPC 0
-				length 177
-				name returnCode
-				descriptor I
-				index 4
-			}
-			{
-				startPC 2
-				length 174
-				name headerLength
-				descriptor I
-				index 5
-			}
-			{
-				startPC 5
-				length 170
-				name msgVariablePartLength
-				descriptor I
-				index 6
-			}
-			{
-				startPC 31
-				length 131
-				name flags
-				descriptor B
-				index 7
-			}
-		]
-		pcToLine {
-			0 348
-			2 349
-			5 351
-			11 352
-			17 354
-			24 355
-			29 357
-			31 359
-			35 360
-			43 361
-			48 362
-			57 363
-			62 364
-			71 365
-			76 366
-			82 369
-			86 370
-			98 371
-			107 372
-			119 373
-			128 374
-			133 375
-		}
-		pcTranslation {
-			0 0
-			1 1
-			3 2
-			5 4
-			7 5
-			8 5
-			10 7
-			12 9
-			15 11
-			16 11
-			18 13
-			20 15
-			23 17
-			24 17
-			27 18
-			28 19
-			30 19
-			32 21
-			33 22
-			34 23
-			35 24
-			36 24
-			39 25
-			40 26
-			42 28
-			43 29
-			44 30
-			46 31
-			47 32
-			50 35
-			52 36
-			53 37
-			54 38
-			55 39
-			57 40
-			60 43
-			61 44
-			62 45
-			65 48
-			67 49
-			69 51
-			70 52
-			71 53
-			73 54
-			76 57
-			77 58
-			78 59
-			81 62
-			83 63
-			85 65
-			86 66
-			87 67
-			89 68
-			92 71
-			93 72
-			94 73
-			97 76
-			99 77
-			101 79
-			102 80
-			103 81
-			105 82
-			106 82
-			109 83
-			110 84
-			112 85
-			113 86
-			114 86
-			117 87
-			118 88
-			119 89
-			121 91
-			122 92
-			125 95
-			126 96
-			127 97
-			128 98
-			129 98
-			132 99
-			133 100
-			134 101
-			137 104
-			138 105
-			139 106
-			140 107
-			141 107
-			144 108
-			145 109
-			146 110
-			148 112
-			149 113
-			152 116
-			153 117
-			154 118
-			155 119
-			156 119
-			159 120
-			160 121
-			161 122
-			164 125
-			165 126
-			166 127
-			167 128
-			168 128
-			171 129
-			172 130
-			174 131
-			175 132
-			176 133
-		}
-	}
-	{
-		index 538
 		signature setDISCONNECT()V
 		definedIn MQTTSNPacket
 		signatureHash 3237
@@ -25310,7 +24585,7 @@ methods [
 		argsFieldCount 1
 		flags 64
 		codeLength 23
-		codeOffset 15753
+		codeOffset 15249
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -25370,7 +24645,7 @@ methods [
 		}
 	}
 	{
-		index 539
+		index 536
 		signature "toEncapsulatedMessage(I[B)[B"
 		definedIn MQTTSNPacket
 		signatureHash 25621
@@ -25380,7 +24655,7 @@ methods [
 		argsFieldCount 2
 		flags 66
 		codeLength 62
-		codeOffset 15776
+		codeOffset 15272
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -25504,7 +24779,7 @@ methods [
 		}
 	}
 	{
-		index 540
+		index 537
 		signature "toBytes()[B"
 		definedIn MQTTSNPacket
 		signatureHash 64705
@@ -25514,7 +24789,7 @@ methods [
 		argsFieldCount 1
 		flags 64
 		codeLength 42
-		codeOffset 15838
+		codeOffset 15334
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -25606,7 +24881,7 @@ methods [
 		}
 	}
 	{
-		index 541
+		index 538
 		signature "toMQTTSN([B)V"
 		definedIn MQTTSNPacket
 		signatureHash 33421
@@ -25616,7 +24891,7 @@ methods [
 		argsFieldCount 2
 		flags 0
 		codeLength 50
-		codeOffset 15880
+		codeOffset 15376
 		getter1For -1
 		getter2For -1
 		localVars [
@@ -25709,7 +24984,7 @@ methods [
 		}
 	}
 	{
-		index 542
+		index 539
 		signature command(Lcom/virtenio/driver/usart/NativeUSART;I)I
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 17504
@@ -25728,7 +25003,7 @@ methods [
 		}
 	}
 	{
-		index 543
+		index 540
 		signature getManager()Lcom/virtenio/driver/InstanceManager;
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 59513
@@ -25738,7 +25013,7 @@ methods [
 		argsFieldCount 0
 		flags 131139
 		codeLength 32
-		codeOffset 15930
+		codeOffset 15426
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25763,7 +25038,7 @@ methods [
 		}
 	}
 	{
-		index 544
+		index 541
 		signature getInstance(I)Lcom/virtenio/driver/usart/NativeUSART;
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 38775
@@ -25773,7 +25048,7 @@ methods [
 		argsFieldCount 1
 		flags 131138
 		codeLength 12
-		codeOffset 15962
+		codeOffset 15458
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25788,7 +25063,7 @@ methods [
 		}
 	}
 	{
-		index 545
+		index 542
 		signature "<init>(I)V"
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 34633
@@ -25798,7 +25073,7 @@ methods [
 		argsFieldCount 2
 		flags 196800
 		codeLength 10
-		codeOffset 15974
+		codeOffset 15470
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25817,7 +25092,7 @@ methods [
 		}
 	}
 	{
-		index 546
+		index 543
 		signature errorCheck()V
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 22025
@@ -25827,7 +25102,7 @@ methods [
 		argsFieldCount 1
 		flags 196672
 		codeLength 14
-		codeOffset 15984
+		codeOffset 15480
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25849,7 +25124,7 @@ methods [
 		}
 	}
 	{
-		index 547
+		index 544
 		signature open(Lcom/virtenio/driver/usart/USARTParams;)V
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 19910
@@ -25859,7 +25134,7 @@ methods [
 		argsFieldCount 2
 		flags 131136
 		codeLength 25
-		codeOffset 15998
+		codeOffset 15494
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25886,7 +25161,7 @@ methods [
 		}
 	}
 	{
-		index 548
+		index 545
 		signature isOpened()Z
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 1141
@@ -25896,7 +25171,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 22
-		codeOffset 16023
+		codeOffset 15519
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25920,7 +25195,7 @@ methods [
 		}
 	}
 	{
-		index 549
+		index 546
 		signature close()V
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 53782
@@ -25930,7 +25205,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 12
-		codeOffset 16045
+		codeOffset 15541
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25949,7 +25224,7 @@ methods [
 		}
 	}
 	{
-		index 550
+		index 547
 		signature read()I
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 47003
@@ -25959,7 +25234,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 13
-		codeOffset 16057
+		codeOffset 15553
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -25979,7 +25254,7 @@ methods [
 		}
 	}
 	{
-		index 551
+		index 548
 		signature "read([BII)I"
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 16749
@@ -25989,7 +25264,7 @@ methods [
 		argsFieldCount 4
 		flags 131136
 		codeLength 26
-		codeOffset 16070
+		codeOffset 15566
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26018,7 +25293,7 @@ methods [
 		}
 	}
 	{
-		index 552
+		index 549
 		signature "read([B)I"
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 35517
@@ -26028,7 +25303,7 @@ methods [
 		argsFieldCount 2
 		flags 131136
 		codeLength 9
-		codeOffset 16096
+		codeOffset 15592
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26045,7 +25320,7 @@ methods [
 		}
 	}
 	{
-		index 553
+		index 550
 		signature "readFully([B)I"
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 12560
@@ -26055,7 +25330,7 @@ methods [
 		argsFieldCount 2
 		flags 131136
 		codeLength 9
-		codeOffset 16105
+		codeOffset 15601
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26072,7 +25347,7 @@ methods [
 		}
 	}
 	{
-		index 554
+		index 551
 		signature "readFully([BII)I"
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 40285
@@ -26082,7 +25357,7 @@ methods [
 		argsFieldCount 4
 		flags 131136
 		codeLength 26
-		codeOffset 16114
+		codeOffset 15610
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26111,7 +25386,7 @@ methods [
 		}
 	}
 	{
-		index 555
+		index 552
 		signature write(I)V
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 15824
@@ -26121,7 +25396,7 @@ methods [
 		argsFieldCount 2
 		flags 131136
 		codeLength 12
-		codeOffset 16140
+		codeOffset 15636
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26140,7 +25415,7 @@ methods [
 		}
 	}
 	{
-		index 556
+		index 553
 		signature "write([BII)V"
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 56054
@@ -26150,7 +25425,7 @@ methods [
 		argsFieldCount 4
 		flags 131136
 		codeLength 23
-		codeOffset 16152
+		codeOffset 15648
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26175,7 +25450,7 @@ methods [
 		}
 	}
 	{
-		index 557
+		index 554
 		signature "write([B)V"
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 17773
@@ -26185,7 +25460,7 @@ methods [
 		argsFieldCount 2
 		flags 131136
 		codeLength 9
-		codeOffset 16175
+		codeOffset 15671
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26203,7 +25478,7 @@ methods [
 		}
 	}
 	{
-		index 558
+		index 555
 		signature flush()V
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 33036
@@ -26213,7 +25488,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 13
-		codeOffset 16184
+		codeOffset 15680
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26232,7 +25507,7 @@ methods [
 		}
 	}
 	{
-		index 559
+		index 556
 		signature available()I
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 1663
@@ -26242,7 +25517,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 14
-		codeOffset 16197
+		codeOffset 15693
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26262,7 +25537,7 @@ methods [
 		}
 	}
 	{
-		index 560
+		index 557
 		signature pending()I
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 60310
@@ -26272,7 +25547,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 14
-		codeOffset 16211
+		codeOffset 15707
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26292,7 +25567,7 @@ methods [
 		}
 	}
 	{
-		index 561
+		index 558
 		signature setReceiveTimeout(I)V
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 23983
@@ -26302,7 +25577,7 @@ methods [
 		argsFieldCount 2
 		flags 131136
 		codeLength 17
-		codeOffset 16225
+		codeOffset 15721
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26325,7 +25600,7 @@ methods [
 		}
 	}
 	{
-		index 562
+		index 559
 		signature getReceiveTimeout()I
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 43274
@@ -26335,7 +25610,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 2
-		codeOffset 16242
+		codeOffset 15738
 		getter1For 4
 		getter2For -1
 		pcToLine {
@@ -26348,7 +25623,7 @@ methods [
 		}
 	}
 	{
-		index 563
+		index 560
 		signature getInputStream()Ljava/io/InputStream;
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 52582
@@ -26358,7 +25633,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 9
-		codeOffset 16244
+		codeOffset 15740
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26373,7 +25648,7 @@ methods [
 		}
 	}
 	{
-		index 564
+		index 561
 		signature getOutputStream()Ljava/io/OutputStream;
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 60629
@@ -26383,7 +25658,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 9
-		codeOffset 16253
+		codeOffset 15749
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26398,7 +25673,7 @@ methods [
 		}
 	}
 	{
-		index 565
+		index 562
 		signature "<init>(ILcom/virtenio/driver/usart/NativeUSART$1;)V"
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 34518
@@ -26408,7 +25683,7 @@ methods [
 		argsFieldCount 3
 		flags 131264
 		codeLength 6
-		codeOffset 16262
+		codeOffset 15758
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26422,7 +25697,7 @@ methods [
 		}
 	}
 	{
-		index 566
+		index 563
 		signature access$100(Lcom/virtenio/driver/usart/NativeUSART;I)I
 		definedIn com/virtenio/driver/usart/NativeUSART
 		signatureHash 23570
@@ -26432,7 +25707,7 @@ methods [
 		argsFieldCount 2
 		flags 131074
 		codeLength 7
-		codeOffset 16268
+		codeOffset 15764
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26446,7 +25721,7 @@ methods [
 		}
 	}
 	{
-		index 567
+		index 564
 		signature "<init>(Lcom/virtenio/driver/usart/USART;)V"
 		definedIn com/virtenio/driver/usart/USARTOutputStream
 		signatureHash 63910
@@ -26456,7 +25731,7 @@ methods [
 		argsFieldCount 2
 		flags 192
 		codeLength 10
-		codeOffset 16275
+		codeOffset 15771
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26474,7 +25749,7 @@ methods [
 		}
 	}
 	{
-		index 568
+		index 565
 		signature write(I)V
 		definedIn com/virtenio/driver/usart/USARTOutputStream
 		signatureHash 15824
@@ -26484,7 +25759,7 @@ methods [
 		argsFieldCount 2
 		flags 96
 		codeLength 20
-		codeOffset 16295
+		codeOffset 15791
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26510,7 +25785,7 @@ methods [
 		}
 	}
 	{
-		index 569
+		index 566
 		signature "write([BII)V"
 		definedIn com/virtenio/driver/usart/USARTOutputStream
 		signatureHash 56054
@@ -26520,7 +25795,7 @@ methods [
 		argsFieldCount 4
 		flags 96
 		codeLength 22
-		codeOffset 16325
+		codeOffset 15821
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26548,7 +25823,7 @@ methods [
 		}
 	}
 	{
-		index 570
+		index 567
 		signature flush()V
 		definedIn com/virtenio/driver/usart/USARTOutputStream
 		signatureHash 33036
@@ -26558,7 +25833,7 @@ methods [
 		argsFieldCount 1
 		flags 32
 		codeLength 19
-		codeOffset 16357
+		codeOffset 15853
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26583,7 +25858,7 @@ methods [
 		}
 	}
 	{
-		index 571
+		index 568
 		signature "<init>()V"
 		definedIn com/virtenio/driver/usart/NativeUSART$1
 		signatureHash 10657
@@ -26593,7 +25868,7 @@ methods [
 		argsFieldCount 1
 		flags 131264
 		codeLength 5
-		codeOffset 16376
+		codeOffset 15872
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26606,7 +25881,7 @@ methods [
 		}
 	}
 	{
-		index 572
+		index 569
 		signature createInstance(I)Lcom/virtenio/driver/usart/NativeUSART;
 		definedIn com/virtenio/driver/usart/NativeUSART$1
 		signatureHash 32528
@@ -26616,7 +25891,7 @@ methods [
 		argsFieldCount 2
 		flags 131136
 		codeLength 10
-		codeOffset 16381
+		codeOffset 15877
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26632,7 +25907,7 @@ methods [
 		}
 	}
 	{
-		index 573
+		index 570
 		signature getInstanceCount()I
 		definedIn com/virtenio/driver/usart/NativeUSART$1
 		signatureHash 1396
@@ -26642,7 +25917,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 6
-		codeOffset 16391
+		codeOffset 15887
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26656,7 +25931,7 @@ methods [
 		}
 	}
 	{
-		index 574
+		index 571
 		signature createInstance(I)Ljava/lang/Object;
 		definedIn com/virtenio/driver/usart/NativeUSART$1
 		signatureHash 24465
@@ -26666,7 +25941,7 @@ methods [
 		argsFieldCount 2
 		flags 131072
 		codeLength 6
-		codeOffset 16397
+		codeOffset 15893
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26680,7 +25955,7 @@ methods [
 		}
 	}
 	{
-		index 575
+		index 572
 		signature "<init>(Lcom/virtenio/driver/usart/USART;)V"
 		definedIn com/virtenio/driver/usart/USARTInputStream
 		signatureHash 63910
@@ -26690,7 +25965,7 @@ methods [
 		argsFieldCount 2
 		flags 192
 		codeLength 10
-		codeOffset 16403
+		codeOffset 15899
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26708,7 +25983,7 @@ methods [
 		}
 	}
 	{
-		index 576
+		index 573
 		signature read()I
 		definedIn com/virtenio/driver/usart/USARTInputStream
 		signatureHash 47003
@@ -26718,7 +25993,7 @@ methods [
 		argsFieldCount 1
 		flags 96
 		codeLength 16
-		codeOffset 16423
+		codeOffset 15919
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26740,7 +26015,7 @@ methods [
 		}
 	}
 	{
-		index 577
+		index 574
 		signature "read([BII)I"
 		definedIn com/virtenio/driver/usart/USARTInputStream
 		signatureHash 16749
@@ -26750,7 +26025,7 @@ methods [
 		argsFieldCount 4
 		flags 96
 		codeLength 61
-		codeOffset 16449
+		codeOffset 15945
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26796,7 +26071,7 @@ methods [
 		}
 	}
 	{
-		index 578
+		index 575
 		signature available()I
 		definedIn com/virtenio/driver/usart/USARTInputStream
 		signatureHash 1663
@@ -26806,7 +26081,7 @@ methods [
 		argsFieldCount 1
 		flags 32
 		codeLength 16
-		codeOffset 16520
+		codeOffset 16016
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26828,7 +26103,7 @@ methods [
 		}
 	}
 	{
-		index 579
+		index 576
 		signature "<init>(Lcom/virtenio/radio/ieee_802_15_4/RadioDriver;)V"
 		definedIn com/virtenio/radio/ieee_802_15_4/RadioDriverFrameIO
 		signatureHash 18819
@@ -26838,7 +26113,7 @@ methods [
 		argsFieldCount 2
 		flags 224
 		codeLength 43
-		codeOffset 16546
+		codeOffset 16042
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26880,7 +26155,7 @@ methods [
 		}
 	}
 	{
-		index 580
+		index 577
 		signature "<init>(Lcom/virtenio/radio/ieee_802_15_4/RadioDriver;I)V"
 		definedIn com/virtenio/radio/ieee_802_15_4/RadioDriverFrameIO
 		signatureHash 4335
@@ -26890,7 +26165,7 @@ methods [
 		argsFieldCount 3
 		flags 224
 		codeLength 42
-		codeOffset 16599
+		codeOffset 16095
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26932,7 +26207,7 @@ methods [
 		}
 	}
 	{
-		index 581
+		index 578
 		signature available()I
 		definedIn com/virtenio/radio/ieee_802_15_4/RadioDriverFrameIO
 		signatureHash 1663
@@ -26942,7 +26217,7 @@ methods [
 		argsFieldCount 1
 		flags 97
 		codeLength 31
-		codeOffset 16681
+		codeOffset 16177
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -26982,7 +26257,7 @@ methods [
 		}
 	}
 	{
-		index 582
+		index 579
 		signature close()V
 		definedIn com/virtenio/radio/ieee_802_15_4/RadioDriverFrameIO
 		signatureHash 53782
@@ -26992,7 +26267,7 @@ methods [
 		argsFieldCount 1
 		flags 262208
 		codeLength 1
-		codeOffset 16712
+		codeOffset 16208
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27003,7 +26278,7 @@ methods [
 		}
 	}
 	{
-		index 583
+		index 580
 		signature flush()V
 		definedIn com/virtenio/radio/ieee_802_15_4/RadioDriverFrameIO
 		signatureHash 33036
@@ -27013,7 +26288,7 @@ methods [
 		argsFieldCount 1
 		flags 262208
 		codeLength 1
-		codeOffset 16713
+		codeOffset 16209
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27024,7 +26299,7 @@ methods [
 		}
 	}
 	{
-		index 584
+		index 581
 		signature rxBeforeTx()V
 		definedIn com/virtenio/radio/ieee_802_15_4/RadioDriverFrameIO
 		signatureHash 37698
@@ -27034,7 +26309,7 @@ methods [
 		argsFieldCount 1
 		flags 65632
 		codeLength 69
-		codeOffset 16734
+		codeOffset 16230
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27102,7 +26377,7 @@ methods [
 		}
 	}
 	{
-		index 585
+		index 582
 		signature transmit(Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
 		definedIn com/virtenio/radio/ieee_802_15_4/RadioDriverFrameIO
 		signatureHash 15717
@@ -27112,7 +26387,7 @@ methods [
 		argsFieldCount 2
 		flags 97
 		codeLength 52
-		codeOffset 16843
+		codeOffset 16339
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27165,7 +26440,7 @@ methods [
 		}
 	}
 	{
-		index 586
+		index 583
 		signature receive(Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
 		definedIn com/virtenio/radio/ieee_802_15_4/RadioDriverFrameIO
 		signatureHash 995
@@ -27175,7 +26450,7 @@ methods [
 		argsFieldCount 2
 		flags 32
 		codeLength 135
-		codeOffset 17005
+		codeOffset 16501
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27305,7 +26580,7 @@ methods [
 		}
 	}
 	{
-		index 587
+		index 584
 		signature "<init>()V"
 		definedIn com/virtenio/io/TimeoutException
 		signatureHash 10657
@@ -27315,7 +26590,7 @@ methods [
 		argsFieldCount 1
 		flags 192
 		codeLength 6
-		codeOffset 17140
+		codeOffset 16636
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27329,7 +26604,7 @@ methods [
 		}
 	}
 	{
-		index 588
+		index 585
 		signature "<init>(Ljava/lang/String;)V"
 		definedIn com/virtenio/io/TimeoutException
 		signatureHash 5175
@@ -27339,7 +26614,7 @@ methods [
 		argsFieldCount 2
 		flags 128
 		codeLength 7
-		codeOffset 17146
+		codeOffset 16642
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27354,7 +26629,7 @@ methods [
 		}
 	}
 	{
-		index 589
+		index 586
 		signature "<init>(I)V"
 		definedIn com/virtenio/misc/FixedFifo
 		signatureHash 34633
@@ -27364,7 +26639,7 @@ methods [
 		argsFieldCount 2
 		flags 131264
 		codeLength 20
-		codeOffset 17153
+		codeOffset 16649
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27384,7 +26659,7 @@ methods [
 		}
 	}
 	{
-		index 590
+		index 587
 		signature clear()V
 		definedIn com/virtenio/misc/FixedFifo
 		signatureHash 8750
@@ -27394,7 +26669,7 @@ methods [
 		argsFieldCount 1
 		flags 131137
 		codeLength 32
-		codeOffset 17173
+		codeOffset 16669
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27432,7 +26707,7 @@ methods [
 		}
 	}
 	{
-		index 591
+		index 588
 		signature put(Ljava/lang/Object;)Z
 		definedIn com/virtenio/misc/FixedFifo
 		signatureHash 34253
@@ -27442,7 +26717,7 @@ methods [
 		argsFieldCount 2
 		flags 131137
 		codeLength 33
-		codeOffset 17205
+		codeOffset 16701
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27489,7 +26764,7 @@ methods [
 		}
 	}
 	{
-		index 592
+		index 589
 		signature remove()Ljava/lang/Object;
 		definedIn com/virtenio/misc/FixedFifo
 		signatureHash 53651
@@ -27499,7 +26774,7 @@ methods [
 		argsFieldCount 1
 		flags 131137
 		codeLength 35
-		codeOffset 17238
+		codeOffset 16734
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27550,7 +26825,7 @@ methods [
 		}
 	}
 	{
-		index 593
+		index 590
 		signature remove(I)Ljava/lang/Object;
 		definedIn com/virtenio/misc/FixedFifo
 		signatureHash 21107
@@ -27560,7 +26835,7 @@ methods [
 		argsFieldCount 2
 		flags 131137
 		codeLength 132
-		codeOffset 17273
+		codeOffset 16769
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27706,7 +26981,7 @@ methods [
 		}
 	}
 	{
-		index 594
+		index 591
 		signature peek()Ljava/lang/Object;
 		definedIn com/virtenio/misc/FixedFifo
 		signatureHash 39019
@@ -27716,7 +26991,7 @@ methods [
 		argsFieldCount 1
 		flags 131137
 		codeLength 10
-		codeOffset 17405
+		codeOffset 16901
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27739,7 +27014,7 @@ methods [
 		}
 	}
 	{
-		index 595
+		index 592
 		signature peek(I)Ljava/lang/Object;
 		definedIn com/virtenio/misc/FixedFifo
 		signatureHash 33549
@@ -27749,7 +27024,7 @@ methods [
 		argsFieldCount 2
 		flags 131137
 		codeLength 28
-		codeOffset 17415
+		codeOffset 16911
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27784,7 +27059,7 @@ methods [
 		}
 	}
 	{
-		index 596
+		index 593
 		signature size()I
 		definedIn com/virtenio/misc/FixedFifo
 		signatureHash 20178
@@ -27794,7 +27069,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 2
-		codeOffset 17443
+		codeOffset 16939
 		getter1For 3
 		getter2For -1
 		pcToLine {
@@ -27807,7 +27082,7 @@ methods [
 		}
 	}
 	{
-		index 597
+		index 594
 		signature capacity()I
 		definedIn com/virtenio/misc/FixedFifo
 		signatureHash 52284
@@ -27817,7 +27092,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 3
-		codeOffset 17445
+		codeOffset 16941
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27831,7 +27106,7 @@ methods [
 		}
 	}
 	{
-		index 598
+		index 595
 		signature freeCapacity()I
 		definedIn com/virtenio/misc/FixedFifo
 		signatureHash 7898
@@ -27841,7 +27116,7 @@ methods [
 		argsFieldCount 1
 		flags 131137
 		codeLength 5
-		codeOffset 17448
+		codeOffset 16944
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27858,7 +27133,7 @@ methods [
 		}
 	}
 	{
-		index 599
+		index 596
 		signature isEmpty()Z
 		definedIn com/virtenio/misc/FixedFifo
 		signatureHash 57583
@@ -27868,7 +27143,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 10
-		codeOffset 17453
+		codeOffset 16949
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27885,7 +27160,7 @@ methods [
 		}
 	}
 	{
-		index 600
+		index 597
 		signature isFull()Z
 		definedIn com/virtenio/misc/FixedFifo
 		signatureHash 38470
@@ -27895,7 +27170,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 12
-		codeOffset 17463
+		codeOffset 16959
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27915,7 +27190,7 @@ methods [
 		}
 	}
 	{
-		index 601
+		index 598
 		signature iterator()Ljava/util/Iterator;
 		definedIn com/virtenio/misc/FixedFifo
 		signatureHash 6323
@@ -27925,7 +27200,7 @@ methods [
 		argsFieldCount 1
 		flags 131136
 		codeLength 9
-		codeOffset 17475
+		codeOffset 16971
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27940,7 +27215,7 @@ methods [
 		}
 	}
 	{
-		index 602
+		index 599
 		signature access$000(Lcom/virtenio/misc/FixedFifo;)I
 		definedIn com/virtenio/misc/FixedFifo
 		signatureHash 17060
@@ -27950,7 +27225,7 @@ methods [
 		argsFieldCount 1
 		flags 131074
 		codeLength 4
-		codeOffset 17484
+		codeOffset 16980
 		getter1For 3
 		getter2For -1
 		pcToLine {
@@ -27963,7 +27238,7 @@ methods [
 		}
 	}
 	{
-		index 603
+		index 600
 		signature "<init>(Lcom/virtenio/misc/FixedFifo;)V"
 		definedIn com/virtenio/misc/FixedFifo$1
 		signatureHash 44590
@@ -27973,7 +27248,7 @@ methods [
 		argsFieldCount 2
 		flags 192
 		codeLength 14
-		codeOffset 17488
+		codeOffset 16984
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -27993,7 +27268,7 @@ methods [
 		}
 	}
 	{
-		index 604
+		index 601
 		signature hasNext()Z
 		definedIn com/virtenio/misc/FixedFifo$1
 		signatureHash 46803
@@ -28003,7 +27278,7 @@ methods [
 		argsFieldCount 1
 		flags 64
 		codeLength 14
-		codeOffset 17502
+		codeOffset 16998
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -28023,7 +27298,7 @@ methods [
 		}
 	}
 	{
-		index 605
+		index 602
 		signature next()Ljava/lang/Object;
 		definedIn com/virtenio/misc/FixedFifo$1
 		signatureHash 22258
@@ -28033,7 +27308,7 @@ methods [
 		argsFieldCount 1
 		flags 64
 		codeLength 14
-		codeOffset 17516
+		codeOffset 17012
 		getter1For -1
 		getter2For -1
 		pcToLine {
@@ -28054,7 +27329,7 @@ methods [
 		}
 	}
 	{
-		index 606
+		index 603
 		signature remove()V
 		definedIn com/virtenio/misc/FixedFifo$1
 		signatureHash 65468
@@ -28064,7 +27339,7 @@ methods [
 		argsFieldCount 1
 		flags 0
 		codeLength 9
-		codeOffset 17530
+		codeOffset 17026
 		getter1For -1
 		getter2For -1
 		pcToLine {

@@ -36,9 +36,9 @@ public class GatewayDesktop {
     
     private int topicIdIncrement = 1;
     
-    private final String PORT_NUMBER = "COM5";
+    private final String PORT_NUMBER = "COM3";
     private final long MAX_WAIT_PUBACK_TIME = 5;
-    private final int BROADCAST_INTERVAL_SECONDS = 30;
+    private final int BROADCAST_INTERVAL_SECONDS = 120;
     private final int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
     DataConnection conn;
     BufferedOutputStream out; //For sending message to Preon32
@@ -58,11 +58,11 @@ public class GatewayDesktop {
     }
 
     public void run() {
-        // initIOStream(); // Menjalankan Gateway Preon32 beserta IO-nya
+        initIOStream(); // Menjalankan Gateway Preon32 beserta IO-nya
         initConnectionBroker(); // Connect ke broker
-        // runPortReader(); // Baca port USART
-        // runBroadcastConstantly(); // untuk send ADVERTISE
-        // runAggregate(); //  untuk send Publish
+        runPortReader(); // Baca port USART
+        runBroadcastConstantly(); // untuk send ADVERTISE
+        runAggregate(); //  untuk send Publish
     }   
 
     private void initIOStream() {
@@ -105,7 +105,7 @@ public class GatewayDesktop {
                         byte[] encapsulatedMessage = new byte[byteLength];
                         
                         System.arraycopy(incomingByte, 0, encapsulatedMessage, 0, byteLength);
-                        if ((encapsulatedMessage[1] & 0xFF)  == MQTTSNPacket.ENCAPSULATED_MESSAGE){ // Kalo msgType = 0xFE (EncapsulatedMessage)
+                        if ((encapsulatedMessage[1] & 0xFF)  == (MQTTSNPacket.ENCAPSULATED_MESSAGE & 0xFF)){ // Kalo msgType = 0xFE (EncapsulatedMessage)
                             handleEncapsulatedMessage(encapsulatedMessage);
                         }
 

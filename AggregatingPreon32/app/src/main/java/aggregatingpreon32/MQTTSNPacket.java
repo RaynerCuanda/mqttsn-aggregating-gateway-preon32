@@ -32,7 +32,7 @@ public class MQTTSNPacket {
     // public static final byte PINGRESP = 0x17;
     public static final byte DISCONNECT = 0x18;
 
-    private int keepAliveTime = 90; // seconds
+    private int keepAliveTime = 30; // seconds * DEFAULT TIME FOR ADVERTISE, CONNECT (CHANGEABLE)
 
     private static final byte flags_topicIdType_normal      = (byte) 0x00;
     private static final byte flags_topicIdType_pre         = (byte) 0x01;
@@ -380,7 +380,7 @@ public class MQTTSNPacket {
         int msgVariablePartLength = 0 ; //Duration (Optional) *Tidak digunakan pada tugas akhir ini
         
         this.msgHeader = new byte[headerLength];
-        // this.msgVariablePart = new byte[msgVariablePartLength];
+        this.msgVariablePart = new byte[msgVariablePartLength];
         
         this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
         this.msgHeader[1] = DISCONNECT;
@@ -394,7 +394,7 @@ public class MQTTSNPacket {
         int totalLength = length + MQTTSNMessage.length;
         byte[] EncapsulatedMessage = new byte[totalLength];
 
-        EncapsulatedMessage[0] = (byte) length;
+        EncapsulatedMessage[0] = (byte)length;
         EncapsulatedMessage[1] = msgType;
         EncapsulatedMessage[2] = ctrl;
         EncapsulatedMessage[3] = (byte) ((wirelessNodeId >> 8) & 0xFF); // High byte

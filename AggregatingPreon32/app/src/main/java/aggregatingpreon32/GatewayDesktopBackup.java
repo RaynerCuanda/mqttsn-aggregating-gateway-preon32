@@ -26,7 +26,7 @@
 
 //     private int topicIdIncrement = 1;
 
-//     private final String PORT_NUMBER = "COM5";
+//     private final String PORT_NUMBER = "COM3";
 //     private final int BROADCAST_INTERVAL_SECONDS = 30;
 //     private final int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
 //     DataConnection conn;
@@ -193,11 +193,12 @@
 //                 } else { // Kalo belum ada di map, suruh DISCONNECT
 //                     response.setDISCONNECT();
 //                     encapsulateAndSendToGW(wirelessNodeId, response);
+//                 }
 //                 break;
 //             }
-//             case 0x14:{
+//             case 0x14:
 //                 System.out.println("unhandled: Wireless Node Id > 2"); // kode 0x14 untuk debug Preon32Gateway(Tidak sesuai spec)
-//             }
+//                 break;
 //             case MQTTSNPacket.PUBACK:{
 //                 // TO DO:
 //                 System.out.println("Gateway received a PUBACK message, but currently not handled by gateway");

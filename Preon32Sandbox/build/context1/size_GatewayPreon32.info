@@ -171,27 +171,6 @@
 	3		isDataPending()Z
 	2		getBuffer()[B
 
-1436		MQTTSNPacket
-	257		setPUBLISH(ZIZIIILjava/lang/String;)V
-	205		setSUBSCRIBE(ZIIII)V
-	165		setSUBSCRIBE(ZIIILjava/lang/String;)V
-	134		setSUBACK(IIII)V
-	97		setCONNECT(Ljava/lang/String;ZZ)V
-	90		setREGISTER(IILjava/lang/String;)V
-	76		setREGACK(III)V
-	76		setPUBACK(III)V
-	54		setADVERTISE(I)V
-	52		setGWINFO(ILjava/lang/String;)V
-	50		toMQTTSN([B)V
-	42		toBytes()[B
-	41		toEncapsulatedMessage(I[B)[B
-	33		setSEARCHGW(I)V
-	33		setCONNACK(I)V
-	15		getMsgType()B
-	12		<init>()V
-	2		getMsgHeader()[B
-	2		getMsgVariablePart()[B
-
 1323		com/virtenio/driver/flash/GenericSPIFlash
 	173		read(I[BII)I
 	145		programPage(I[BII)V
@@ -227,6 +206,25 @@
 	2		getPageSize()I
 	2		getSectorSize()I
 	2		getBlockSize()I
+
+975		MQTTSNPacket
+	257		setPUBLISH(ZIZIIILjava/lang/String;)V
+	97		setCONNECT(Ljava/lang/String;ZZ)V
+	90		setREGISTER(IILjava/lang/String;)V
+	76		setREGACK(III)V
+	76		setPUBACK(III)V
+	62		toEncapsulatedMessage(I[B)[B
+	54		setADVERTISE(I)V
+	52		setGWINFO(ILjava/lang/String;)V
+	50		toMQTTSN([B)V
+	42		toBytes()[B
+	33		setSEARCHGW(I)V
+	33		setCONNACK(I)V
+	23		setDISCONNECT()V
+	15		getMsgType()B
+	11		<init>()V
+	2		getMsgHeader()[B
+	2		getMsgVariablePart()[B
 
 604		com/virtenio/radio/ieee_802_15_4/RadioDriverFrameIO
 	245		receive(Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
@@ -271,19 +269,19 @@
 	0		getSourceCount()I
 	0		fire(I)V
 
-438		GatewayPreon32
-	83		handleEncapsulatedMessage([B)V
-	65		sendToNodeSensor([BI)V
+480		GatewayPreon32
+	119		handleEncapsulatedMessage([B)V
 	61		setupRadio()V
+	61		sendToNodeSensor([BI)V
+	48		configUSART()Lcom/virtenio/driver/usart/USART;
 	44		sendToPC([B)V
-	36		configUSART()Lcom/virtenio/driver/usart/USART;
 	34		useUSART()V
 	23		handleMessageMQTTSN(Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
 	18		<init>()V
 	17		run()V
-	13		main([Ljava/lang/String;)V
 	12		runUSARTReceiver()V
 	12		runRadioReceiver()V
+	11		main([Ljava/lang/String;)V
 	6		access$100(LGatewayPreon32;[B)V
 	6		access$300(LGatewayPreon32;Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
 	4		access$000(LGatewayPreon32;)Lcom/virtenio/driver/usart/USART;
@@ -565,8 +563,8 @@
 	2		getFrameControlInt()I
 	2		getValue()I
 
-75		GatewayPreon32$1
-	65		run()V
+79		GatewayPreon32$1
+	69		run()V
 	10		<init>(LGatewayPreon32;)V
 
 72		com/virtenio/driver/spi/SPIOutputStream
@@ -719,7 +717,4 @@
 12		com/virtenio/driver/spi/SPIException
 	6		<init>(I)V
 	6		<init>(Ljava/lang/Throwable;)V
-
-6		com/virtenio/preon32/examples/common/USARTConstants
-	6		<init>()V
 

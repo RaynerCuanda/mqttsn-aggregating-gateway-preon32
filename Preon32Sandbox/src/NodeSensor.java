@@ -37,10 +37,10 @@ public class NodeSensor {
 	private final String humTopic = "9017/Humidity";
 	private final String airTopic = "9017/AirPressure";
 	private final String accTopic = "9017/Vibration";
+	private long durationConnectionTime;
 	 
 	private boolean isConnected = false;
 	private long timeLastReceive;
-	private long durationConnectionTime;
 	private long registerSentTime;
 	private int currentRegisterId = 0;
 	private int registerCounter = 1;
@@ -106,21 +106,23 @@ public class NodeSensor {
 				 Thread.sleep(5000);
 				// Jika address udah ada, buat koneksi
 			} else if (!isConnected){
-				handleGatewayTimeout();
-				MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-				mqttsnPacket.setCONNECT(NODE_SENSOR_ID, true, true);
-				send(mqttsnPacket, BASESTATION_ADDR);
-				System.out.println("send connect");
-				Thread.sleep(5000);
+				if(!handleGatewayTimeout()){ //Kalo timeout ga usah ngirim lagi
+					MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
+					mqttsnPacket.setCONNECT(NODE_SENSOR_ID, true, true);
+					send(mqttsnPacket, BASESTATION_ADDR);
+					System.out.println("send connect");
+					Thread.sleep(5000);
+				}
 				//Jika sudah konek, maka akan selalu sense, terus publish
 			} else if (isConnected){
-				handleGatewayTimeout();
-				handleTemperature(sensor);
-				handlePressure(sensor);
-				handleAcceleration(sensor);
-				handleHumidity(sensor);
-				handlePubAckTimeOut();
-				Thread.sleep(2000);
+				if(!handleGatewayTimeout()){
+//					handleTemperature(sensor);
+//					handlePressure(sensor);
+//					handleAcceleration(sensor);
+					handleHumidity(sensor); // QoS 1
+					handlePubAckTimeOut();
+					Thread.sleep(2000);
+				}
 			} 
 		}
 	}
@@ -138,7 +140,8 @@ public class NodeSensor {
 					BASESTATION_ADDR = (int)frame.getSrcAddr();
 				}
 				if (BASESTATION_ADDR == (int) frame.getSrcAddr()){ // Kalo dapet advertise dari GW yang berbeda, di ignore
-					durationConnectionTime = ((packet.getMsgVariablePart()[1] & 0xFF) << 8) | (packet.getMsgVariablePart()[2] & 0xFF);
+					// durationConnectionTime = ((packet.getMsgVariablePart()[1] & 0xFF) << 8) | (packet.getMsgVariablePart()[2] & 0xFF);
+					durationConnectionTime = 30; //Karena di MQTTSNPacket ADVERTISE = 30 detik juga
 				}
 				break;
 			case MQTTSNPacket.GWINFO:
@@ -159,6 +162,11 @@ public class NodeSensor {
 				//Return Code 0x02 (TopicId Invalid)
 				switch(packet.getMsgVariablePart()[4]){
 					case 0x02:{
+						int messageId = ((packet.getMsgVariablePart()[2] & 0xFF) << 8) | (packet.getMsgVariablePart()[3] & 0xFF);
+						if (messageId != 0) {
+							pubAckHashMap.remove(messageId);
+	//						pubAckHashMap.clear(); // Kalo Gateway clean start saat Node sensor nyala, node sensor bakal ngirim terus dengan topik yang salah.
+						}
 						int topicId = ((packet.getMsgVariablePart()[0] & 0xFF) << 8) | (packet.getMsgVariablePart()[1] & 0xFF);
 						if(tempTopicId == topicId){
 							tempTopicId = 0;
@@ -172,7 +180,6 @@ public class NodeSensor {
 						break;
 					}
 					case 0x00:{
-						System.out.println("Gateway ACCEPTED: PUBLISH");
 						// Ilangin dari map, karena udah di acknowledge sama gateway
 						int messageId = ((packet.getMsgVariablePart()[2] & 0xFF) << 8) | (packet.getMsgVariablePart()[3] & 0xFF);
 						pubAckHashMap.remove(messageId);
@@ -352,18 +359,20 @@ public class NodeSensor {
 		}
 	}
 
-	private void handleGatewayTimeout(){
+	private boolean handleGatewayTimeout(){
 		long time_since_receive_from_gw = ((System.currentTimeMillis() - timeLastReceive) / 1000);
 		System.out.println(time_since_receive_from_gw+" seconds since receiving something from GW");
 		if (time_since_receive_from_gw > durationConnectionTime){
 			 isConnected = false; 
-			 BASESTATION_ADDR = 0x00;
+			 BASESTATION_ADDR = (byte)0x00;
 			 tempTopicId = 0;
 			 humTopicId = 0;
 			 airTopicId = 0;
 			 accTopicId = 0;
 			 System.out.println("Connection Time out!");
-		}	
+			 return true;
+		}
+		return false;
 	}
 
 

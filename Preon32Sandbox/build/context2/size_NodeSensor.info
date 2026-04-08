@@ -251,15 +251,15 @@
 	5		sort([S)V
 	5		sort([Ljava/lang/Object;)V
 
-2253		NodeSensor
-	615		handleMessage(Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
+2271		NodeSensor
+	639		handleMessage(Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
 	421		handleREGACK(LMQTTSNPacket;)V
-	176		run()V
+	167		run()V
 	139		handleRegister(Ljava/lang/String;I)V
 	121		<init>()V
 	115		handlePubAckTimeOut()V
+	97		handleGatewayTimeout()Z
 	97		handleHumidity(LPreon32Sensor;)V
-	94		handleGatewayTimeout()V
 	86		handleCONNACK(B)V
 	71		send(LMQTTSNPacket;I)V
 	66		handleAcceleration(LPreon32Sensor;)V
