@@ -1,6 +1,5 @@
 package aggregatingpreon32;
-// TO DO: IMPORTANT! LEARN HOW TO PACK SEVERAL MENU to 1 BYTE  (BIT MANIPULATION)
-// Asumsi: Header selalu 1 byte.
+
 public class MQTTSNPacket {
     
     //	Used by Node Sensor
@@ -20,9 +19,9 @@ public class MQTTSNPacket {
     public static final byte ENCAPSULATED_MESSAGE = (byte)0xFE;
 
     // Tiga ini untuk QoS level 2
-    // public static final byte PUBREC = 0x0E;
-    // public static final byte PUBREL = 0x0F;
-    // public static final byte PUBCOMP = 0x10;
+    public static final byte PUBREC = 0x0E;
+    public static final byte PUBREL = 0x0F;
+    public static final byte PUBCOMP = 0x10;
 
 //    public static final byte SUBSCRIBE = 0x12; // Done, not yet test. !Delete this?
 //    public static final byte SUBACK = 0x13; // Done, not yet test !Delete this?
@@ -32,7 +31,7 @@ public class MQTTSNPacket {
     // public static final byte PINGRESP = 0x17;
     public static final byte DISCONNECT = 0x18;
 
-    private int keepAliveTime = 30; // seconds * DEFAULT TIME FOR ADVERTISE, CONNECT (CHANGEABLE)
+    private int keepAliveTime = 90; // seconds * DEFAULT TIME FOR ADVERTISE, CONNECT (CHANGEABLE)
 
     private static final byte flags_topicIdType_normal      = (byte) 0x00;
     private static final byte flags_topicIdType_pre         = (byte) 0x01;
@@ -69,70 +68,70 @@ public class MQTTSNPacket {
         }
     }
 
+    private void messageHeaderBuilder(int msgVariablePartLength, byte msgType){
+        int headerLength = 1 + 1; // Length (0), MsgType(1)
+        int totalLength = headerLength + msgVariablePartLength;
+        if (totalLength > 255){ // 
+            headerLength = 1 + 2 + 1; // 3-oktet Length Code (0), Length (1:2), MsgType (3)
+            this.msgHeader = new byte[headerLength];
+            this.msgHeader[0] = 0x01; //Penanda 3-oktet length.
+            this.msgHeader[1] = (byte) ((totalLength >> 8) & 0xFF); 
+            this.msgHeader[2] = (byte) (totalLength & 0xFF);    
+            this.msgHeader[3] = msgType; 
+        } else {
+            this.msgHeader = new byte[headerLength];
+            this.msgHeader[0] = (byte) (totalLength);
+            this.msgHeader[1] = msgType;
+        }
+    }
+
     public void setADVERTISE(int gwId) {
-        int headerLength = 1 + 1; // Length (0), MsgType (1)
         int msgVariablePartLength = 1 + 2; //gwID (0), Duration (1:2)
         
-        this.msgHeader = new byte[headerLength];
-        this.msgVariablePart = new byte[msgVariablePartLength];
+        messageHeaderBuilder(msgVariablePartLength, ADVERTISE);        
         
-        this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
-        this.msgHeader[1] = ADVERTISE;
-
+        this.msgVariablePart = new byte[msgVariablePartLength];
         this.msgVariablePart[0] = (byte) gwId; 
         this.msgVariablePart[1] = (byte) ((keepAliveTime >> 8) & 0xFF); // High Byte (MSB)
         this.msgVariablePart[2] = (byte) (keepAliveTime & 0xFF);        // Low Byte (LSB) 
     }
 
     public void setSEARCHGW(int radius){
-        int headerLength = 1 + 1; // Length (0), MsgType(1)
         int msgVariablePartLength = 1; //Radius (0)
+            
+        messageHeaderBuilder(msgVariablePartLength, SEARCHGW);
         
-        this.msgHeader = new byte[headerLength];
         this.msgVariablePart = new byte[msgVariablePartLength];
-        
-        this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
-        this.msgHeader[1] = SEARCHGW;
-
         this.msgVariablePart[0] = (byte) radius;
     }
 
     public void setGWINFO(int gwId, String gwAddress){
-        int headerLength = 1 + 1; // Length (0), MsgType(1)
-
         byte[] gwAddressBytes = gwAddress.getBytes();
         int msgVariablePartLength = 1 + gwAddressBytes.length; //GwID (0), GwAdd(1:n)
         
-        this.msgHeader = new byte[headerLength];
-        this.msgVariablePart = new byte[msgVariablePartLength];
+        messageHeaderBuilder(msgVariablePartLength, GWINFO);
         
-        this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
-        this.msgHeader[1] = GWINFO;
-
+        this.msgVariablePart = new byte[msgVariablePartLength];
         this.msgVariablePart[0] = (byte) gwId;
         System.arraycopy(gwAddressBytes, 0, msgVariablePart, 1, gwAddressBytes.length);   
     }
 
     public void setCONNECT(String clientID, boolean flag_cleansession, boolean flag_will) {
-        int headerLength = 1 + 1; // Length (0), MsgType (1)
         byte[] clientIdBytes = clientID.getBytes();
         int msgVariablePartLength = 1 + 1 + 2 + clientIdBytes.length; //Flags (0), Protocol ID (1), Duration (2 & 3), ClientID (4:n)
         
-        this.msgHeader = new byte[headerLength];
-        this.msgVariablePart = new byte[msgVariablePartLength];
+        messageHeaderBuilder(msgVariablePartLength, CONNECT);        
         
-        this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
-        this.msgHeader[1] = CONNECT;
-
         byte flags = (byte) 0x00;
         if (flag_will){
             flags |= flags_will;
         }
-
+        
         if (flag_cleansession){
             flags |= flags_cleanSession;
         } 
-
+        
+        this.msgVariablePart = new byte[msgVariablePartLength];
         this.msgVariablePart[0] = flags;
         this.msgVariablePart[1] = (byte) 0x01; 
         this.msgVariablePart[2] = (byte) ((keepAliveTime >> 8) & 0xFF); // High Byte (MSB)
@@ -144,35 +143,21 @@ public class MQTTSNPacket {
     }
     
     public void setCONNACK(int returnCode) {
-        //RETURN CODE NYA LIHAT TABEL DI PDF,
-        //  0x00 Accepted
-        // 0x01 Rejected: congestion
-        // 0x02 Rejected: invalid topic ID
-        // 0x03 Rejected: not supported
-        // 0x04 - 0xFF reserved
-        int headerLength = 1 + 1; // Length (0), MsgType (1)
         int msgVariablePartLength = 1; //returnCode (0)
         
-        this.msgHeader = new byte[headerLength];
-        this.msgVariablePart = new byte[msgVariablePartLength];
+        messageHeaderBuilder(msgVariablePartLength, CONNACK);
         
-        this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
-        this.msgHeader[1] = CONNACK;
-
+        this.msgVariablePart = new byte[msgVariablePartLength];
         this.msgVariablePart[0] = (byte) returnCode; 
     }
 
     public void setREGISTER(int topicId, int msgId, String topicName) {
-        int headerLength = 1 + 1; // Length (0), MsgType (1)
         byte[] topicNameBytes = topicName.getBytes();
         int msgVariablePartLength = 2 + 2 + topicNameBytes.length; //topicId (0:1), MsgId (2:3), topicName(4:n)
         
-        this.msgHeader = new byte[headerLength];
-        this.msgVariablePart = new byte[msgVariablePartLength];
+        messageHeaderBuilder(msgVariablePartLength, REGISTER);
         
-        this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
-        this.msgHeader[1] = REGISTER;
-
+        this.msgVariablePart = new byte[msgVariablePartLength];
         this.msgVariablePart[0] = (byte) ((topicId >> 8) & 0xFF); // High Byte (MSB)
         this.msgVariablePart[1] = (byte) (topicId & 0xFF);        // Low Byte (LSB) 
         this.msgVariablePart[2] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
@@ -181,15 +166,11 @@ public class MQTTSNPacket {
     }
 
     public void setREGACK(int topicId, int msgId, int returnCode) {
-        int headerLength = 1 + 1; // Length (0), MsgType (1)
         int msgVariablePartLength = 2 + 2 + 1; //topicId (0:1), MsgId (2:3), returnCode(4)
         
-        this.msgHeader = new byte[headerLength];
-        this.msgVariablePart = new byte[msgVariablePartLength];
+        messageHeaderBuilder(msgVariablePartLength, REGACK);        
         
-        this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
-        this.msgHeader[1] = REGACK;
-
+        this.msgVariablePart = new byte[msgVariablePartLength];
         this.msgVariablePart[0] = (byte) ((topicId >> 8) & 0xFF); // High Byte (MSB)
         this.msgVariablePart[1] = (byte) (topicId & 0xFF);        // Low Byte (LSB) 
         this.msgVariablePart[2] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
@@ -198,16 +179,11 @@ public class MQTTSNPacket {
     }
 
     public void setPUBLISH(boolean dup, int qos, boolean retain, int topicIdType, int topicId, int msgId, String data) {
-        int headerLength = 1 + 1; // Length (0), MsgType (1)
         byte[] dataBytes = data.getBytes();
         int msgVariablePartLength = 1 + 2 + 2 + dataBytes.length; //Flags (0), topicId (1:2), msgId(3:4), data(5:n)
         
-        this.msgHeader = new byte[headerLength];
-        this.msgVariablePart = new byte[msgVariablePartLength];
+        messageHeaderBuilder(msgVariablePartLength, PUBLISH);
         
-        this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
-        this.msgHeader[1] = PUBLISH; 
- 
         byte flags = (byte) 0x00;
         if (dup){
             flags |= flags_DUP;
@@ -224,7 +200,7 @@ public class MQTTSNPacket {
         if(retain){
             flags |= flags_retain;
         }
-
+        
         if (topicIdType<=3 && topicIdType>=0){
             if (topicIdType == 0){
                 flags |= flags_topicIdType_normal;
@@ -238,7 +214,8 @@ public class MQTTSNPacket {
         } else{
             throw new IllegalArgumentException("Invalid topicIdType");
         }
-
+        
+        this.msgVariablePart = new byte[msgVariablePartLength];
         this.msgVariablePart[0] = flags; 
         this.msgVariablePart[1] = (byte) ((topicId >> 8) & 0xFF); // High Byte (MSB)
         this.msgVariablePart[2] = (byte) (topicId & 0xFF);        // Low Byte (LSB) 
@@ -248,20 +225,46 @@ public class MQTTSNPacket {
     }
 
     public void setPUBACK(int topicId, int msgId, int returnCode){
-        int headerLength = 1 + 1; // Length (0), MsgType (1)
         int msgVariablePartLength = 2 + 2 + 1 ; //topicId (0:1), msgId (2:3), returnCode(4)
         
-        this.msgHeader = new byte[headerLength];
-        this.msgVariablePart = new byte[msgVariablePartLength];
+        messageHeaderBuilder(msgVariablePartLength, PUBACK);
         
-        this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
-        this.msgHeader[1] = PUBACK;
-
+        this.msgVariablePart = new byte[msgVariablePartLength];
         this.msgVariablePart[0] = (byte) ((topicId >> 8) & 0xFF); // High Byte (MSB)
         this.msgVariablePart[1] = (byte) (topicId & 0xFF);        // Low Byte (LSB)
         this.msgVariablePart[2] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
         this.msgVariablePart[3] = (byte) (msgId & 0xFF);        // Low Byte (LSB)
         this.msgVariablePart[4] = (byte) returnCode; 
+    }
+
+        public void setPUBREC(int msgId){
+        int msgVariablePartLength = 2 ; //msgId (0:1)
+        
+        messageHeaderBuilder(msgVariablePartLength, PUBREC);        
+        
+        this.msgVariablePart = new byte[msgVariablePartLength];
+        this.msgVariablePart[0] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
+        this.msgVariablePart[1] = (byte) (msgId & 0xFF);        // Low Byte (LSB)
+    }
+
+    public void setPUBREL(int msgId){
+        int msgVariablePartLength = 2 ; //msgId (0:1)
+
+        messageHeaderBuilder(msgVariablePartLength, PUBREC);
+        
+        this.msgVariablePart = new byte[msgVariablePartLength];
+        this.msgVariablePart[0] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
+        this.msgVariablePart[1] = (byte) (msgId & 0xFF);        // Low Byte (LSB)
+    }
+
+    public void setPUBCOMP(int msgId){
+        int msgVariablePartLength = 2 ; //msgId (0:1)
+        
+        messageHeaderBuilder(msgVariablePartLength, PUBREC);        
+        
+        this.msgVariablePart = new byte[msgVariablePartLength];
+        this.msgVariablePart[0] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
+        this.msgVariablePart[1] = (byte) (msgId & 0xFF);        // Low Byte (LSB)
     }
 
     // public void setSUBSCRIBE(boolean dup, int qos, int topicIdType, int msgId, int topicId){
@@ -376,14 +379,11 @@ public class MQTTSNPacket {
     // }
 
     public void setDISCONNECT(){
-        int headerLength = 1 + 1; // Length (0), MsgType (1)
         int msgVariablePartLength = 0 ; //Duration (Optional) *Tidak digunakan pada tugas akhir ini
         
-        this.msgHeader = new byte[headerLength];
+        messageHeaderBuilder(msgVariablePartLength, DISCONNECT);
+
         this.msgVariablePart = new byte[msgVariablePartLength];
-        
-        this.msgHeader[0] = (byte) (msgVariablePartLength + headerLength);
-        this.msgHeader[1] = DISCONNECT;
     }
 
     public static byte[] toEncapsulatedMessage(int wirelessNodeId, byte[] MQTTSNMessage){

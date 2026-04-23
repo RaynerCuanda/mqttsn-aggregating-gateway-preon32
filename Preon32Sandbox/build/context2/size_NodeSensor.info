@@ -251,21 +251,24 @@
 	5		sort([S)V
 	5		sort([Ljava/lang/Object;)V
 
-2271		NodeSensor
-	639		handleMessage(Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
+2269		NodeSensor
+	620		handleMessage(Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
 	421		handleREGACK(LMQTTSNPacket;)V
-	167		run()V
+	182		run()V
 	139		handleRegister(Ljava/lang/String;I)V
-	121		<init>()V
-	115		handlePubAckTimeOut()V
+	111		<init>()V
+	97		handlePubAckTimeOut()V
 	97		handleGatewayTimeout()Z
-	97		handleHumidity(LPreon32Sensor;)V
 	86		handleCONNACK(B)V
 	71		send(LMQTTSNPacket;I)V
-	66		handleAcceleration(LPreon32Sensor;)V
-	66		handleTemperature(LPreon32Sensor;)V
-	66		handlePressure(LPreon32Sensor;)V
+	66		sendQoS1(Ljava/lang/String;I)V
+	66		sendQoS2(Ljava/lang/String;I)V
 	64		setupRadio()V
+	44		handleAcceleration(LPreon32Sensor;)V
+	44		handleTemperature(LPreon32Sensor;)V
+	44		handlePressure(LPreon32Sensor;)V
+	34		handleHumidity(LPreon32Sensor;)V
+	27		sendQoS0(Ljava/lang/String;I)V
 	23		increasePuBackCounter()V
 	12		runRadioReceiver()V
 	11		main([Ljava/lang/String;)V
@@ -414,6 +417,28 @@
 	2		getSectorSize()I
 	2		getBlockSize()I
 
+1140		MQTTSNPacket
+	257		setPUBLISH(ZIZIIILjava/lang/String;)V
+	97		setCONNECT(Ljava/lang/String;ZZ)V
+	90		setREGISTER(IILjava/lang/String;)V
+	76		setREGACK(III)V
+	76		setPUBACK(III)V
+	62		toEncapsulatedMessage(I[B)[B
+	55		setPUBREC(III)V
+	55		setPUBREL(III)V
+	55		setPUBCOMP(III)V
+	54		setADVERTISE(I)V
+	52		setGWINFO(ILjava/lang/String;)V
+	50		toMQTTSN([B)V
+	42		toBytes()[B
+	33		setSEARCHGW(I)V
+	33		setCONNACK(I)V
+	23		setDISCONNECT()V
+	15		getMsgType()B
+	11		<init>()V
+	2		getMsgHeader()[B
+	2		getMsgVariablePart()[B
+
 1091		java/util/HashMap
 	125		removeEntry(Ljava/lang/Object;)Ljava/util/HashMap$Entry;
 	120		putImpl(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
@@ -510,25 +535,6 @@
 	5		open()V
 	5		close()V
 	2		getConversionScale()F
-
-975		MQTTSNPacket
-	257		setPUBLISH(ZIZIIILjava/lang/String;)V
-	97		setCONNECT(Ljava/lang/String;ZZ)V
-	90		setREGISTER(IILjava/lang/String;)V
-	76		setREGACK(III)V
-	76		setPUBACK(III)V
-	62		toEncapsulatedMessage(I[B)[B
-	54		setADVERTISE(I)V
-	52		setGWINFO(ILjava/lang/String;)V
-	50		toMQTTSN([B)V
-	42		toBytes()[B
-	33		setSEARCHGW(I)V
-	33		setCONNACK(I)V
-	23		setDISCONNECT()V
-	15		getMsgType()B
-	11		<init>()V
-	2		getMsgHeader()[B
-	2		getMsgVariablePart()[B
 
 807		java/util/AbstractMap
 	178		equals(Ljava/lang/Object;)Z

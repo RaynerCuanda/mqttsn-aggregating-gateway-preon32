@@ -29,6 +29,7 @@ public class GatewayDesktop {
     private HashMap<MQTTSNPacket, Integer> waitingPubAckMap = new HashMap<>(); // Pesan PUBLISH key, WirelessNodeId value
     BlockingQueue<MQTTSNPacket> sendTaskQueue = new LinkedBlockingQueue<>();
 
+    private HashMap<Integer, MQTTSNPacket> qos2PendingMap = new HashMap<>(); //wireless Node Id, Publish Packet; // wirelessNodeID because 1 node sensor only can send 1 qos message at a time.
     // Mqtt5BlockingClient client;
     MqttAsyncClient client;
     IMqttToken token;
@@ -37,8 +38,7 @@ public class GatewayDesktop {
     private int topicIdIncrement = 1;
     
     private final String PORT_NUMBER = "COM3";
-    private final long MAX_WAIT_PUBACK_TIME = 5;
-    private final int BROADCAST_INTERVAL_SECONDS = 120;
+    private final int BROADCAST_INTERVAL_SECONDS = 30;
     private final int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
     DataConnection conn;
     BufferedOutputStream out; //For sending message to Preon32
@@ -184,19 +184,31 @@ public class GatewayDesktop {
             case MQTTSNPacket.PUBLISH:{
                 if (nodeSensorMap.containsValue(wirelessNodeId)){
                     int topicId = ((mqttsnPacket.getMsgVariablePart()[1] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[2] & 0xFF);
+                    int messageId = mqttsnPacket.getMsgVariablePart()[3] << 8 | mqttsnPacket.getMsgVariablePart()[4];
                     
                     String topicName = topicMap.get(topicId);
                     if (topicName == null){ // Ga ketemu mappingnya, jadi harus send PUBACK ke sensor
                         System.out.println("Gateway received a PUBLISH message, but topic not found. Sending PUBACK");
-                        response.setPUBACK(topicId, 0x00, 0x02); // Topic id invalid
+                        response.setPUBACK(topicId, messageId, 0x02); // Topic id invalid
                         encapsulateAndSendToGW(wirelessNodeId, response);
                     } else {
                         System.out.println("Gateway received a PUBLISH message"+ topicName+" with topic id: "+topicId);
-                        sendTaskQueue.add(mqttsnPacket);
-                        int messageId = mqttsnPacket.getMsgVariablePart()[3] << 8 | mqttsnPacket.getMsgVariablePart()[4];
                         //Kalo Messaage ID != 0, artinya butuh alamat node sensor untuk dikirimin PUBACK
                         if (messageId != 0){
-                            waitingPubAckMap.put(mqttsnPacket, wirelessNodeId);
+                            int flags = mqttsnPacket.getMsgVariablePart()[0] & 0xFF;
+                            int qosBits = ( flags & 0x60) >> 5; // Ambil bit QoS
+                            if (qosBits == 2){
+                                MQTTSNPacket pubrecPacket = new MQTTSNPacket();
+                                pubrecPacket.setPUBREC(messageId);
+                                encapsulateAndSendToGW(wirelessNodeId, pubrecPacket);
+
+                                qos2PendingMap.put(wirelessNodeId, mqttsnPacket);
+                            } else if (qosBits == 1) {
+                                sendTaskQueue.add(mqttsnPacket);
+                                waitingPubAckMap.put(mqttsnPacket, wirelessNodeId);
+                            }
+                        } else {
+                            sendTaskQueue.add(mqttsnPacket);
                         }
                     }
                 } else { // Kalo belum ada di map, suruh DISCONNECT
@@ -204,6 +216,28 @@ public class GatewayDesktop {
                     encapsulateAndSendToGW(wirelessNodeId, response);
                 }
                 break;  
+            }
+            case MQTTSNPacket.PUBREL:{
+                int messageId = mqttsnPacket.getMsgVariablePart()[0] << 8 | mqttsnPacket.getMsgVariablePart()[1];
+                MQTTSNPacket publishPacket = qos2PendingMap.get(wirelessNodeId);
+                
+                if (publishPacket != null){
+                    int publishMsgId = mqttsnPacket.getMsgVariablePart()[3] << 8 | mqttsnPacket.getMsgVariablePart()[4];
+                    
+                    if (messageId == publishMsgId){
+                        qos2PendingMap.remove(wirelessNodeId);
+                        try {
+                            sendTaskQueue.put(qos2PendingMap.remove(wirelessNodeId));
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        System.out.println("PUBREC Message ID != PublishMessageID");
+                    }
+                }
+                response.setPUBCOMP(messageId);
+                encapsulateAndSendToGW(wirelessNodeId, response);
+                break;
             }
             case 0x14:{
                 System.out.println("unhandled: Wireless Node Id > 2"); // kode 0x14 untuk debug Preon32Gateway(Tidak sesuai spec)
@@ -279,13 +313,15 @@ public class GatewayDesktop {
                         if (qosBits == 1){
                             message.setQos(1);
                             MqttActionListener pubListener = new MqttActionListener() {
+                                @Override
                                 public void onSuccess(IMqttToken asyncActionToken) {
                                     // Kalo dapet balesan dari Broker, kirim pesan PUBACK ke Node Sensor
                                     MQTTSNPacket pubackPacket = new MQTTSNPacket();
                                     pubackPacket.setPUBACK(topicId, messageId, 0x00);
                                     encapsulateAndSendToGW(waitingPubAckMap.remove(mqttsnPacket), pubackPacket);
                                 }
-        
+                                
+                                @Override
                                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
                                     // Kalo gagal dapet balesan dari broker.
                                     MQTTSNPacket pubackPacket = new MQTTSNPacket();
@@ -294,7 +330,11 @@ public class GatewayDesktop {
                                 }
                             };
                             token = client.publish(topicName, message, null, pubListener);
-                        } else { //Tidak implementasi QoS 2 dan -1
+                        } else if (qosBits == 2){
+                            message.setQos(2);
+                            token = client.publish(topicName, message);
+                        } 
+                        else { //Tidak implementasi QoS 2 dan -1
                             message.setQos(0);
                             token = client.publish(topicName, message);
                         }

@@ -8,9 +8,9 @@ export default function MyRoom({roomId}){
   
   const initialData = [
     {topicName: "Temperature"      ,value: 0, unit: " °C"  , imgSrc: "temperature.png", label: "Temperature"},
-    {topicName: "AirPressure"     ,value: 0, unit: " kPa" , imgSrc: "temperature.png", label: "Air Pressure"},
-    {topicName: "Humidity"         ,value: 0, unit: " %RH" , imgSrc: "temperature.png", label: "Humidity"},
-    {topicName: "Vibration"        ,value: 0, unit: " g"   , imgSrc: "temperature.png", label: "Vibration"},
+    {topicName: "AirPressure"     ,value: 0, unit: " kPa" , imgSrc: "air_pressure.png", label: "Air Pressure"},
+    {topicName: "Humidity"         ,value: 0, unit: " %RH" , imgSrc: "humidity.png", label: "Humidity"},
+    {topicName: "Vibration"        ,value: 0, unit: " g"   , imgSrc: "vibration.png", label: "Vibration"},
     // {topicName: "light_intensity"  ,value: 0, unit: " lx"  , imgSrc: "temperature.png", label: "Light Intensity"},
   ];
   const [sensorData, setSensorData] = useState(initialData);
