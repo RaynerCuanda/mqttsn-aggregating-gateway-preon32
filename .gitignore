@@ -2,3 +2,4 @@ ECHO is on.
 
 .env
 node_modules/
+*.hprof
