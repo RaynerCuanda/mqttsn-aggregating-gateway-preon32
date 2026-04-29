@@ -56,7 +56,7 @@ public class MQTTSNPacket {
         return this.msgHeader;
     }
 
-    public byte[] getMsgVariablePart(){
+    public byte[] getMsgVarPart(){
         return this.msgVariablePart;
     }
 
@@ -250,7 +250,7 @@ public class MQTTSNPacket {
     public void setPUBREL(int msgId){
         int msgVariablePartLength = 2 ; //msgId (0:1)
 
-        messageHeaderBuilder(msgVariablePartLength, PUBREC);
+        messageHeaderBuilder(msgVariablePartLength, PUBREL);
         
         this.msgVariablePart = new byte[msgVariablePartLength];
         this.msgVariablePart[0] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
@@ -260,7 +260,7 @@ public class MQTTSNPacket {
     public void setPUBCOMP(int msgId){
         int msgVariablePartLength = 2 ; //msgId (0:1)
         
-        messageHeaderBuilder(msgVariablePartLength, PUBREC);        
+        messageHeaderBuilder(msgVariablePartLength, PUBCOMP);        
         
         this.msgVariablePart = new byte[msgVariablePartLength];
         this.msgVariablePart[0] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
@@ -406,7 +406,7 @@ public class MQTTSNPacket {
 
     public byte[] toBytes(){
         byte[] header = getMsgHeader();
-        byte[] varPart = getMsgVariablePart();
+        byte[] varPart = getMsgVarPart();
 
         int headerLength = header.length; 
         int varPartLength = varPart.length;

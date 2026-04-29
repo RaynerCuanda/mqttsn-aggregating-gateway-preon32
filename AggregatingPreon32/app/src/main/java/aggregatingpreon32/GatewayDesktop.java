@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -24,20 +25,21 @@ public class GatewayDesktop {
     private int gatewayId = 0x0001;
     private String gatewayAddress = "0x0001";
     private HashMap<String, Integer> nodeSensorMap = new HashMap<>(); // Client ID Key, Node Sensor Physical Address (WirelessNodeId) Value
+    private HashMap<String, MQTTSNClient> nodeSensorTimerMap = new HashMap<>(); // Client ID Key, MQTTSNClient (WirelessNodeId, keepALiveTime, lastSeen)
     private HashMap<Integer, String> topicMap = new HashMap<>(); //Topid ID  key, Topic name Value
     private HashMap<String, Integer> topicReverseMap = new HashMap<>(); //Topid name key, Topic ID Value
     private HashMap<MQTTSNPacket, Integer> waitingPubAckMap = new HashMap<>(); // Pesan PUBLISH key, WirelessNodeId value
     BlockingQueue<MQTTSNPacket> sendTaskQueue = new LinkedBlockingQueue<>();
 
-    private HashMap<Integer, MQTTSNPacket> qos2PendingMap = new HashMap<>(); //wireless Node Id, Publish Packet; // wirelessNodeID because 1 node sensor only can send 1 qos message at a time.
-    // Mqtt5BlockingClient client;
+    // private HashMap<Integer, MQTTSNPacket> publishPendingMap = new HashMap<>(); //wireless Node Id, Publish Packet; // wirelessNodeID because 1 node sensor only can send 1 qos message at a time.
+    private HashMap<Integer, PublishWrapper> publishPendingMap = new HashMap<>(); //wireless Node Id, Publish Packet; // wirelessNodeID because 1 node sensor only can send 1 qos message at a time.
     MqttAsyncClient client;
     IMqttToken token;
 
     
     private int topicIdIncrement = 1;
     
-    private final String PORT_NUMBER = "COM3";
+    private final String PORT_NUMBER = "COM5";
     private final int BROADCAST_INTERVAL_SECONDS = 30;
     private final int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
     DataConnection conn;
@@ -58,15 +60,17 @@ public class GatewayDesktop {
     }
 
     public void run() {
-        initIOStream(); // Menjalankan Gateway Preon32 beserta IO-nya
         initConnectionBroker(); // Connect ke broker
+        handlePubRelTimeout();
+        handleClientTimeout();
+        runAggregate(); //  untuk send Publish
+        initIOStream(); // Menjalankan Gateway Preon32 beserta IO-nya
         runPortReader(); // Baca port USART
         runBroadcastConstantly(); // untuk send ADVERTISE
-        runAggregate(); //  untuk send Publish
     }   
 
     private void initIOStream() {
-        Preon32Helper nodeHelper = null;
+        Preon32Helper nodeHelper;
         try {
             nodeHelper = new Preon32Helper(PORT_NUMBER, 115200);
             conn = nodeHelper.runModule("GatewayPreon32");
@@ -117,6 +121,71 @@ public class GatewayDesktop {
         }.start();
     }
 
+    private void handlePubRelTimeout() {
+        new Thread() {
+            public void run() {
+                while (true) {
+                    try{
+                        Iterator<Integer> mapIterator = publishPendingMap.keySet().iterator();
+    
+                        while(mapIterator.hasNext()){
+                            Integer wirelessNodeId = mapIterator.next();
+                            PublishWrapper publishWrapper = publishPendingMap.get(wirelessNodeId);
+                            
+                            if (publishWrapper == null) continue;
+
+                            if (publishWrapper.pubrec_counter > publishWrapper.COUNT_TIMEOUT){
+                                mapIterator.remove();
+                                continue;	
+                            }
+    
+                            if (System.currentTimeMillis() - publishWrapper.pubrec_timeSent > publishWrapper.TIME_TIMEOUT){
+                                MQTTSNPacket packet = publishWrapper.mqttsnMessage;
+                                int messageId = packet.getMsgVarPart()[3] & 0xFF << 8 | packet.getMsgVarPart()[4] & 0xFF;
+
+                                MQTTSNPacket res = new MQTTSNPacket();
+                                res.setPUBREC(messageId);
+
+                                encapsulateAndSendToGW(wirelessNodeId, res); // send pubrec again
+                                publishWrapper.pubrec_timeSent = System.currentTimeMillis();
+                                publishWrapper.pubrec_counter++;
+                            }
+                        }         
+                        Thread.sleep(1000);     
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }.start();
+    }
+
+    private void handleClientTimeout() {
+        new Thread() {
+            public void run() {
+                while (true) {
+                    try {
+                        Iterator<String> mapIterator = nodeSensorTimerMap.keySet().iterator();
+    
+                        while(mapIterator.hasNext()){
+                            String nodeName = mapIterator.next();
+                            MQTTSNClient client = nodeSensorTimerMap.get(nodeName);
+                            
+                            if ((System.currentTimeMillis() - client.lastSeen) / 1000 > client.keepAliveTime){
+                                nodeSensorMap.remove(nodeName);
+                                nodeSensorTimerMap.remove(nodeName);
+                                System.out.println("Removed Client with nodename: "+ nodeName);
+                            } else{
+                            }
+                        }
+                        Thread.sleep(1000);
+                    } catch (Exception e) {
+                    }
+                }
+            }
+        }.start();
+    }
+
     private void handleEncapsulatedMessage(byte[] encapsulatedMessage){
         int lenNotMQTTSN = (int) (encapsulatedMessage[0] & 0xFF); // Panjang pesan diluar MQTT-SN
         
@@ -146,9 +215,12 @@ public class GatewayDesktop {
                 System.out.println("Gateway received a CONNECT message");
                 int nodeLength = mqttsnPacket.getMsgHeader()[0]-6;
                 byte[] tempName = new byte[nodeLength];
-                System.arraycopy(mqttsnPacket.getMsgVariablePart(), 4, tempName, 0, nodeLength);
+                System.arraycopy(mqttsnPacket.getMsgVarPart(), 4, tempName, 0, nodeLength);
                 String nodeName = new String(tempName);
+
+                int keepAliveTime = ((mqttsnPacket.getMsgVarPart()[2] & 0xFF ) << 8) | (mqttsnPacket.getMsgVarPart()[3] & 0xFF);
                 nodeSensorMap.put(nodeName, wirelessNodeId);
+                nodeSensorTimerMap.put(nodeName, new MQTTSNClient(wirelessNodeId, keepAliveTime));
                 response.setCONNACK( 0x00); // Accepted
                 encapsulateAndSendToGW(wirelessNodeId, response);
                 break;
@@ -158,11 +230,11 @@ public class GatewayDesktop {
                     System.out.println("Gateway received a REGISTER message");
     
                     int topicId;
-                    int msgId = ((mqttsnPacket.getMsgVariablePart()[2] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[3] & 0xFF);
+                    int msgId = ((mqttsnPacket.getMsgVarPart()[2] & 0xFF ) << 8) | (mqttsnPacket.getMsgVarPart()[3] & 0xFF);
     
                     int topicNameLength = mqttsnPacket.getMsgHeader()[0]-6;
                     byte[] tempName = new byte[topicNameLength];
-                    System.arraycopy(mqttsnPacket.getMsgVariablePart(), 4, tempName, 0, topicNameLength);
+                    System.arraycopy(mqttsnPacket.getMsgVarPart(), 4, tempName, 0, topicNameLength);
                     String topicName = new String(tempName);
     
                     if (topicMap.containsValue(topicName)){
@@ -183,8 +255,8 @@ public class GatewayDesktop {
             }
             case MQTTSNPacket.PUBLISH:{
                 if (nodeSensorMap.containsValue(wirelessNodeId)){
-                    int topicId = ((mqttsnPacket.getMsgVariablePart()[1] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[2] & 0xFF);
-                    int messageId = mqttsnPacket.getMsgVariablePart()[3] << 8 | mqttsnPacket.getMsgVariablePart()[4];
+                    int topicId = (mqttsnPacket.getMsgVarPart()[1] & 0xFF ) << 8 | (mqttsnPacket.getMsgVarPart()[2] & 0xFF);
+                    int messageId = (mqttsnPacket.getMsgVarPart()[3] & 0xFF) << 8 | mqttsnPacket.getMsgVarPart()[4] & 0xFF;
                     
                     String topicName = topicMap.get(topicId);
                     if (topicName == null){ // Ga ketemu mappingnya, jadi harus send PUBACK ke sensor
@@ -192,17 +264,17 @@ public class GatewayDesktop {
                         response.setPUBACK(topicId, messageId, 0x02); // Topic id invalid
                         encapsulateAndSendToGW(wirelessNodeId, response);
                     } else {
-                        System.out.println("Gateway received a PUBLISH message"+ topicName+" with topic id: "+topicId);
+                        System.out.println("Gateway received a PUBLISH message"+ topicName+" with topic id: "+topicId +"mesageID: "+messageId);
                         //Kalo Messaage ID != 0, artinya butuh alamat node sensor untuk dikirimin PUBACK
                         if (messageId != 0){
-                            int flags = mqttsnPacket.getMsgVariablePart()[0] & 0xFF;
+                            int flags = mqttsnPacket.getMsgVarPart()[0] & 0xFF;
                             int qosBits = ( flags & 0x60) >> 5; // Ambil bit QoS
                             if (qosBits == 2){
                                 MQTTSNPacket pubrecPacket = new MQTTSNPacket();
                                 pubrecPacket.setPUBREC(messageId);
                                 encapsulateAndSendToGW(wirelessNodeId, pubrecPacket);
-
-                                qos2PendingMap.put(wirelessNodeId, mqttsnPacket);
+                                System.out.println("Sending PUBREC ("+messageId+")");
+                                publishPendingMap.put(wirelessNodeId, new PublishWrapper(mqttsnPacket));
                             } else if (qosBits == 1) {
                                 sendTaskQueue.add(mqttsnPacket);
                                 waitingPubAckMap.put(mqttsnPacket, wirelessNodeId);
@@ -218,21 +290,22 @@ public class GatewayDesktop {
                 break;  
             }
             case MQTTSNPacket.PUBREL:{
-                int messageId = mqttsnPacket.getMsgVariablePart()[0] << 8 | mqttsnPacket.getMsgVariablePart()[1];
-                MQTTSNPacket publishPacket = qos2PendingMap.get(wirelessNodeId);
+                System.out.println("Receiving PUBREl, putting to PUBLISH Queue, send PUBCOMP");
+                int messageId = (mqttsnPacket.getMsgVarPart()[0] & 0xFF) << 8 | mqttsnPacket.getMsgVarPart()[1] & 0xFF;
+                PublishWrapper temp = publishPendingMap.remove(wirelessNodeId);
+                MQTTSNPacket publishPacket = temp.mqttsnMessage;
                 
                 if (publishPacket != null){
-                    int publishMsgId = mqttsnPacket.getMsgVariablePart()[3] << 8 | mqttsnPacket.getMsgVariablePart()[4];
+                    int publishMsgId = (publishPacket.getMsgVarPart()[3] & 0xFF) << 8 | (publishPacket.getMsgVarPart()[4] & 0xFF);
                     
                     if (messageId == publishMsgId){
-                        qos2PendingMap.remove(wirelessNodeId);
-                        try {
-                            sendTaskQueue.put(qos2PendingMap.remove(wirelessNodeId));
+                        try {       
+                            sendTaskQueue.put(publishPacket);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                     } else {
-                        System.out.println("PUBREC Message ID != PublishMessageID");
+                        System.out.printf("PUBREC Message ID != PublishMessageID, %d, %d", messageId, publishMsgId);
                     }
                 }
                 response.setPUBCOMP(messageId);
@@ -244,7 +317,7 @@ public class GatewayDesktop {
                 break;
             }
             default:{
-                System.out.println("Gateway received an unsupported message type: "+mqttsnPacket.getMsgType() + " with payload: " + new String(mqttsnPacket.getMsgVariablePart()));
+                System.out.println("Gateway received an unsupported message type: "+mqttsnPacket.getMsgType() + " with payload: " + new String(mqttsnPacket.getMsgVarPart()));
                 break;
             }
         }
@@ -297,16 +370,16 @@ public class GatewayDesktop {
                     try {
                         MQTTSNPacket mqttsnPacket = sendTaskQueue.take();
                         
-                        int topicId = ((mqttsnPacket.getMsgVariablePart()[1] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[2] & 0xFF);
-                        int messageId = ((mqttsnPacket.getMsgVariablePart()[3] & 0xFF ) << 8) | (mqttsnPacket.getMsgVariablePart()[4] & 0xFF);
+                        int topicId = ((mqttsnPacket.getMsgVarPart()[1] & 0xFF ) << 8) | (mqttsnPacket.getMsgVarPart()[2] & 0xFF);
+                        int messageId = ((mqttsnPacket.getMsgVarPart()[3] & 0xFF ) << 8) | (mqttsnPacket.getMsgVarPart()[4] & 0xFF);
                         String topicName = topicMap.get(topicId);
                         
                         int payloadLength = mqttsnPacket.getMsgHeader()[0]-7; 
                         byte[] payloadTemp = new byte[payloadLength];
-                        System.arraycopy(mqttsnPacket.getMsgVariablePart(), 5, payloadTemp, 0, payloadLength);
+                        System.arraycopy(mqttsnPacket.getMsgVarPart(), 5, payloadTemp, 0, payloadLength);
                         String payload = new String(payloadTemp);
                         
-                        int flags = mqttsnPacket.getMsgVariablePart()[0] & 0xFF;
+                        int flags = mqttsnPacket.getMsgVarPart()[0] & 0xFF;
                         int qosBits = ( flags & 0x60) >> 5; // Ambil bit QoS
                         
                         MqttMessage message = new MqttMessage(payload.getBytes(UTF_8));

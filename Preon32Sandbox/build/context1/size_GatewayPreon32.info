@@ -207,24 +207,28 @@
 	2		getSectorSize()I
 	2		getBlockSize()I
 
-975		MQTTSNPacket
-	257		setPUBLISH(ZIZIIILjava/lang/String;)V
-	97		setCONNECT(Ljava/lang/String;ZZ)V
-	90		setREGISTER(IILjava/lang/String;)V
-	76		setREGACK(III)V
-	76		setPUBACK(III)V
+1030		MQTTSNPacket
+	243		setPUBLISH(ZIZIIILjava/lang/String;)V
+	84		setCONNECT(Ljava/lang/String;ZZ)V
+	77		setREGISTER(IILjava/lang/String;)V
+	69		messageHeaderBuilder(IB)V
+	63		setREGACK(III)V
+	63		setPUBACK(III)V
 	62		toEncapsulatedMessage(I[B)[B
-	54		setADVERTISE(I)V
-	52		setGWINFO(ILjava/lang/String;)V
 	50		toMQTTSN([B)V
 	42		toBytes()[B
-	33		setSEARCHGW(I)V
-	33		setCONNACK(I)V
-	23		setDISCONNECT()V
+	41		setADVERTISE(I)V
+	39		setGWINFO(ILjava/lang/String;)V
+	37		setPUBREC(I)V
+	37		setPUBREL(I)V
+	37		setPUBCOMP(I)V
+	20		setSEARCHGW(I)V
+	20		setCONNACK(I)V
+	16		setDISCONNECT()V
 	15		getMsgType()B
 	11		<init>()V
 	2		getMsgHeader()[B
-	2		getMsgVariablePart()[B
+	2		getMsgVarPart()[B
 
 604		com/virtenio/radio/ieee_802_15_4/RadioDriverFrameIO
 	245		receive(Lcom/virtenio/radio/ieee_802_15_4/Frame;)V

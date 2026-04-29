@@ -20,7 +20,7 @@
 	<target name="context.set.2.PORT4.ND.1">
 		<switchContext to="config/context2.properties" />
 	</target>
-	<target name="context.set.3.PORT4.ND.2">
+	<target name="context.set.3.PORT5.ND.2">
 		<switchContext to="config/context3.properties" />
 	</target>
 </project>

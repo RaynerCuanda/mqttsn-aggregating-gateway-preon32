@@ -251,18 +251,18 @@
 	5		sort([S)V
 	5		sort([Ljava/lang/Object;)V
 
-2269		NodeSensor
-	620		handleMessage(Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
+2516		NodeSensor
+	806		handleMessage(Lcom/virtenio/radio/ieee_802_15_4/Frame;)V
 	421		handleREGACK(LMQTTSNPacket;)V
-	182		run()V
+	167		run()V
+	139		handleQoSTimeOut()V
 	139		handleRegister(Ljava/lang/String;I)V
-	111		<init>()V
-	97		handlePubAckTimeOut()V
+	113		<init>()V
+	98		sendQoS2(Ljava/lang/String;I)V
 	97		handleGatewayTimeout()Z
 	86		handleCONNACK(B)V
 	71		send(LMQTTSNPacket;I)V
 	66		sendQoS1(Ljava/lang/String;I)V
-	66		sendQoS2(Ljava/lang/String;I)V
 	64		setupRadio()V
 	44		handleAcceleration(LPreon32Sensor;)V
 	44		handleTemperature(LPreon32Sensor;)V
@@ -417,28 +417,6 @@
 	2		getSectorSize()I
 	2		getBlockSize()I
 
-1140		MQTTSNPacket
-	257		setPUBLISH(ZIZIIILjava/lang/String;)V
-	97		setCONNECT(Ljava/lang/String;ZZ)V
-	90		setREGISTER(IILjava/lang/String;)V
-	76		setREGACK(III)V
-	76		setPUBACK(III)V
-	62		toEncapsulatedMessage(I[B)[B
-	55		setPUBREC(III)V
-	55		setPUBREL(III)V
-	55		setPUBCOMP(III)V
-	54		setADVERTISE(I)V
-	52		setGWINFO(ILjava/lang/String;)V
-	50		toMQTTSN([B)V
-	42		toBytes()[B
-	33		setSEARCHGW(I)V
-	33		setCONNACK(I)V
-	23		setDISCONNECT()V
-	15		getMsgType()B
-	11		<init>()V
-	2		getMsgHeader()[B
-	2		getMsgVariablePart()[B
-
 1091		java/util/HashMap
 	125		removeEntry(Ljava/lang/Object;)Ljava/util/HashMap$Entry;
 	120		putImpl(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
@@ -535,6 +513,29 @@
 	5		open()V
 	5		close()V
 	2		getConversionScale()F
+
+1030		MQTTSNPacket
+	243		setPUBLISH(ZIZIIILjava/lang/String;)V
+	84		setCONNECT(Ljava/lang/String;ZZ)V
+	77		setREGISTER(IILjava/lang/String;)V
+	69		messageHeaderBuilder(IB)V
+	63		setREGACK(III)V
+	63		setPUBACK(III)V
+	62		toEncapsulatedMessage(I[B)[B
+	50		toMQTTSN([B)V
+	42		toBytes()[B
+	41		setADVERTISE(I)V
+	39		setGWINFO(ILjava/lang/String;)V
+	37		setPUBREC(I)V
+	37		setPUBREL(I)V
+	37		setPUBCOMP(I)V
+	20		setSEARCHGW(I)V
+	20		setCONNACK(I)V
+	16		setDISCONNECT()V
+	15		getMsgType()B
+	11		<init>()V
+	2		getMsgHeader()[B
+	2		getMsgVarPart()[B
 
 807		java/util/AbstractMap
 	178		equals(Ljava/lang/Object;)Z
