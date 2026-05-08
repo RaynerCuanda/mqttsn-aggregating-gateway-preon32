@@ -5,8 +5,6 @@
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
 import com.virtenio.driver.device.at86rf231.AT86RF231;
 import com.virtenio.driver.device.at86rf231.AT86RF231RadioDriver;
@@ -15,7 +13,6 @@ import com.virtenio.radio.ieee_802_15_4.Frame;
 import com.virtenio.radio.ieee_802_15_4.FrameIO;
 import com.virtenio.radio.ieee_802_15_4.RadioDriver;
 import com.virtenio.radio.ieee_802_15_4.RadioDriverFrameIO;
-import com.virtenio.vm.Time;
 
 public class NodeSensor {
 	// private int COMMON_CHANNEL = 24; // channel
@@ -214,7 +211,6 @@ public class NodeSensor {
 					}
 					default:
 						System.out.println("Unknown Reason");
-
 				}
 				break;
 			}
@@ -229,7 +225,7 @@ public class NodeSensor {
 			}
 			case MQTTSNPacket.PUBREC:{
 				if (currentQoSPublish == null){
-					break; // kalo QoS 2 handshake beres, ga usah kirim PUBREL lagi. (Mungkin dapet PUBREC ke-2 ketika baru dapet PUBCOMP)
+					break; 
 				}
 				int messageId = ((packet.getMsgVarPart()[0] & 0xFF) << 8) | (packet.getMsgVarPart()[1] & 0xFF);
 				MQTTSNPacket res = new MQTTSNPacket();

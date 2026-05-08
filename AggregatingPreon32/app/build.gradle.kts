@@ -21,9 +21,9 @@ dependencies {
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     // This dependency is used by the application.
-    implementation("com.hivemq:hivemq-mqtt-client:1.3.9")
-    implementation("org.eclipse.paho:org.eclipse.paho.mqttv5.client:1.2.5")
-    implementation("io.github.cdimascio:dotenv-java:3.0.0")
+    // implementation("com.hivemq:hivemq-mqtt-client:1.3.9")
+    // implementation("org.eclipse.paho:org.eclipse.paho.mqttv5.client:1.2.5")
+    // implementation("io.github.cdimascio:dotenv-java:3.0.0")
     implementation(libs.guava)
     implementation(fileTree("libs") { include("*.jar")})
 }
