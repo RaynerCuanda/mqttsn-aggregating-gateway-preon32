@@ -1,3 +1,7 @@
+// Cheatsheet bit modification: 
+// 0x01 (bit 0), 0x02 (bit 1), 0x04 (bit 2), 0x08 (bit 3)
+// 0x10 (bit 4), 0x20 (bit 5), 0x40 (bit 6), 0x80 (bit 7)
+
 package aggregatingpreon32;
 
 import java.io.BufferedInputStream;
@@ -27,6 +31,7 @@ public class GatewayMQTTSN {
     private ConcurrentHashMap<String, Integer> nodeSensorMap = new ConcurrentHashMap<>(); // Client ID Key, Node Sensor Physical Address (WirelessNodeId) Value
     private ConcurrentHashMap<String, MQTTSNClient> nodeSensorTimerMap = new ConcurrentHashMap<>(); // Client ID Key, MQTTSNClient (WirelessNodeId, keepALiveTime, lastSeen)
     private ConcurrentHashMap<Integer, String> topicMap = new ConcurrentHashMap<>(); //Topid ID  key, Topic name Value
+    private ConcurrentHashMap<Integer, String> predefinedTopicMap = new ConcurrentHashMap<>(); //Topid ID  key, Topic name Value
     private ConcurrentHashMap<String, Integer> topicReverseMap = new ConcurrentHashMap<>(); //Topid name key, Topic ID Value
     private ConcurrentHashMap<MQTTSNPacket, Integer> waitingQoSMap = new ConcurrentHashMap<>(); // Pesan PUBLISH key, WirelessNodeId value
     
@@ -57,13 +62,19 @@ public class GatewayMQTTSN {
     }
 
     public void run() {
+        
         runAggregate(); //  untuk send Publish
         initConnectionBroker(); // Connect ke broker
-        // handleClientTimeout();
-        // initIOStream(); // Menjalankan Gateway Preon32 beserta IO-nya
-        // runPortReader(); // Baca port USART
-        // runBroadcastConstantly(); // untuk send ADVERTISE
+        handleClientTimeout();
+        initIOStream(); // Menjalankan Gateway Preon32 beserta IO-nya
+        runPortReader(); // Baca port USART
+        runBroadcastConstantly(); // untuk send ADVERTISE
     }   
+
+    private void insertPredefinedMap(){
+        predefinedTopicMap.put(1, "9019/Temperature");
+        predefinedTopicMap.put(2, "9019/Humidity");
+    }
 
     private void initIOStream() {
         Preon32Helper nodeHelper;
@@ -210,30 +221,31 @@ public class GatewayMQTTSN {
                 break;
             }
             case MQTTSNPacket.PUBLISH:{
+                int messageId = (mqttsnPacket.getMsgVarPart()[3] & 0xFF) << 8 | mqttsnPacket.getMsgVarPart()[4] & 0xFF;
+                int flags = mqttsnPacket.getMsgVarPart()[0] & 0xFF;
+                int qos = (flags & 0x60) >> 5;
+                int topicIdType = flags & 0x03;
+                
                 if (nodeSensorMap.containsValue(wirelessNodeId)){
                     int topicId = (mqttsnPacket.getMsgVarPart()[1] & 0xFF ) << 8 | (mqttsnPacket.getMsgVarPart()[2] & 0xFF);
-                    int messageId = (mqttsnPacket.getMsgVarPart()[3] & 0xFF) << 8 | mqttsnPacket.getMsgVarPart()[4] & 0xFF;
                     
-                    String topicName = topicMap.get(topicId);
-                    if (topicName == null){ // Ga ketemu mappingnya, jadi harus send PUBACK ke sensor
+                    String topicName =  (topicIdType == 0b00) ? topicMap.get(topicId) : predefinedTopicMap.get(topicId);
+                    
+                    if (topicName == null && topicIdType != 0b10){ // Kalau Tidak Ketemu mapping DAN topicIdType bukan Short Topic Name
                         System.out.println("Gateway received a PUBLISH message, but topic not found. Sending PUBACK");
                         response.setPUBACK(topicId, messageId, 0x02); // Topic id invalid
                         encapsulateAndSendToNodeSensor(wirelessNodeId, response);
                     } else {
-                        System.out.println("Gateway received a PUBLISH message"+ topicName+" with topic id: "+topicId +"mesageID: "+messageId);
+                        System.out.println("Gateway received a PUBLISH message, inserting it to queue");
                         //Kalo Messaage ID != 0, artinya butuh alamat node sensor untuk dikirimin PUBACK
-                        if (messageId != 0){
-                            int flags = mqttsnPacket.getMsgVarPart()[0] & 0xFF;
-                            int qos = (flags & 0x60) >> 5; // Ambil bit QoS
-                            if (qos == 1 || qos == 2) {
-                                waitingQoSMap.put(mqttsnPacket, wirelessNodeId);
-                                sendTaskQueue.add(mqttsnPacket);
-                            }
-                        } else {
-                            sendTaskQueue.add(mqttsnPacket);
+                        if (qos == 1 || qos == 2) {
+                            waitingQoSMap.put(mqttsnPacket, wirelessNodeId);
                         }
+                        sendTaskQueue.add(mqttsnPacket);
                     }
-                } else { // Kalo belum ada di map, suruh DISCONNECT
+                } else if (qos == 3) { // Kalo belum ada di map, suruh DISCONNECT
+                    sendTaskQueue.add(mqttsnPacket);
+                } else {
                     response.setDISCONNECT();
                     encapsulateAndSendToNodeSensor(wirelessNodeId, response);
                 }
@@ -335,11 +347,20 @@ public class GatewayMQTTSN {
                 while(true){
                     try {
                         MQTTSNPacket mqttsnPacket = sendTaskQueue.take();
-                        
-                        int topicId = ((mqttsnPacket.getMsgVarPart()[1] & 0xFF ) << 8) | (mqttsnPacket.getMsgVarPart()[2] & 0xFF);
+                        String topicName;
+
+                        int topicIdType = mqttsnPacket.getMsgVarPart()[0] & 0x03;
+                        if (topicIdType == 0b10){ //Short Topic Name
+                            char first = (char) mqttsnPacket.getMsgVarPart()[1];
+                            char second = (char) mqttsnPacket.getMsgVarPart()[2];
+                            topicName = "" + first + second;
+                        } else {
+                            int topicId = ((mqttsnPacket.getMsgVarPart()[1] & 0xFF ) << 8) | (mqttsnPacket.getMsgVarPart()[2] & 0xFF);
+                            topicName = (topicIdType == 0b00) ? topicMap.get(topicId) : predefinedTopicMap.get(topicId);
+                        }
+
                         int messageId = ((mqttsnPacket.getMsgVarPart()[3] & 0xFF ) << 8) | (mqttsnPacket.getMsgVarPart()[4] & 0xFF);
-                        String topicName = topicMap.get(topicId);
-                        
+                                                
                         int payloadLength = mqttsnPacket.getMsgHeader()[0]-7; 
                         byte[] payloadTemp = new byte[payloadLength];
                         System.arraycopy(mqttsnPacket.getMsgVarPart(), 5, payloadTemp, 0, payloadLength);
@@ -392,7 +413,7 @@ public class GatewayMQTTSN {
                             // Kalo udah selesai kirim PUBLISH QoS2, PUBREC masuk ke onSuccess/onFailure
                             globalIdMap.put(waitingQoSMap.get(mqttsnPacket), token.getMessageId()); //Supaya nanti PUBREL dari Node Sensor bisa diubah ke Global ID lagi
                         } 
-                        else {
+                        else { // untuk QoS -1, 0
                             message.setQos(0);
                             client.publish(topicName, message);
                         }

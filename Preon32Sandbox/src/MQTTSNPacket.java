@@ -221,8 +221,23 @@ public class MQTTSNPacket {
         this.msgVariablePart[1] = (byte) ((topicId >> 8) & 0xFF); // High Byte (MSB)
         this.msgVariablePart[2] = (byte) (topicId & 0xFF);        // Low Byte (LSB) 
         this.msgVariablePart[3] = (byte) ((msgId >> 8) & 0xFF); // High Byte (MSB)
-        this.msgVariablePart[4] = (byte) (msgId & 0xFF);        // Low Byte (LSB) 
+        this.msgVariablePart[4] = (byte) (msgId & 0xFF);      // Low Byte (LSB) 
         System.arraycopy(dataBytes, 0, msgVariablePart, 5, dataBytes.length);   
+    }
+
+
+    public void setPUBLISH(boolean dup, int qos, boolean retain, int topicIdType, String shortTopicName, int msgId, String data) {        
+        if (shortTopicName == null || shortTopicName.length() != 2) {
+            System.err.println("Short Topic Name must be exactly 2 characters long.");
+        }
+
+        if (topicIdType != 2) {
+            System.err.println("Used short topic named on wrong topicIdType");
+        }
+
+        this.setPUBLISH(dup, qos, retain, topicIdType, 0, msgId, data);
+        this.msgVariablePart[1] = (byte) shortTopicName.charAt(0);
+        this.msgVariablePart[2] = (byte) shortTopicName.charAt(1);
     }
 
     public void setPUBACK(int topicId, int msgId, int returnCode){

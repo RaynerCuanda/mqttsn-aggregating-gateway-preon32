@@ -1,4 +1,3 @@
-import java.io.IOException;
 import java.util.HashMap;
 import com.virtenio.driver.device.at86rf231.AT86RF231;
 import com.virtenio.driver.device.at86rf231.AT86RF231RadioDriver;
@@ -154,7 +153,7 @@ public class NodeSensor {
 				break;
 			}
 			case MQTTSNPacket.PUBREC:{
-				if (currentOngoingQoS == null) break; // udah di acknowledge berarti
+				if (currentOngoingQoS == null) break; // Sudah di acknowledge: skip aja
 
 				int messageId = ((packet.getMsgVarPart()[0] & 0xFF) << 8) | (packet.getMsgVarPart()[1] & 0xFF);
 				MQTTSNPacket res = new MQTTSNPacket();
@@ -212,7 +211,7 @@ public class NodeSensor {
 			
 			//bit modification supaya dup jadi true (untuk pesan PUBLISH)
 			if(packet.getMsgType() == (MQTTSNPacket.PUBLISH & 0xFF)){
-				byte flagsWithDup = (byte) (packet.getMsgVarPart()[0] | 0x80);
+				byte flagsWithDup = (byte) (packet.getMsgVarPart()[0] | 0x80); //Dup jadi true (bit ke terujung)
 				currentOngoingQoS.mqttsnMessage.getMsgVarPart()[0] = flagsWithDup;
 				System.out.println("Resending Publish: Timeout");
 			} else {
@@ -453,7 +452,7 @@ public class NodeSensor {
 			mqttsnPacket.setREGISTER(0, registerCounter, topicName); //topicId pasti 0, kalau di kirim Client (Node sensor) 
 			RegAckHashMap.put(registerCounter, mqttsnPacket);
 			currentRegisterId = registerCounter;
-			
+
 			send(mqttsnPacket, BASESTATION_ADDR);
 			registerSentTime = System.currentTimeMillis();
 			registerCounter++;
