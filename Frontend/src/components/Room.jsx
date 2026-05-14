@@ -18,15 +18,6 @@ export default function MyRoom({roomId}){
   // sumber: https://react.dev/learn/updating-arrays-in-state
   function updateSensorData(payloadName, payloadContent){
     
-    // const nextList = sensorData.map(payload => {
-    //   if(payload.topicName === payloadName){
-    //     return{...payload, value: payloadContent};
-    //   } else{
-    //     return payload;
-    //   }
-    // });
-    // setSensorData(nextList);
-    
     setSensorData(prevData => 
       prevData.map(payload => {
         if (payload.topicName === payloadName) {

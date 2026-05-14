@@ -3,9 +3,9 @@ package aggregatingpreon32;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.eclipse.paho.mqttv5.client.IMqttToken;
@@ -24,13 +24,13 @@ import com.virtenio.commander.toolsets.preon32.Preon32Helper;
 public class GatewayMQTTSN {
     private int gatewayId = 0x0001;
     private String gatewayAddress = "0x0001";
-    private HashMap<String, Integer> nodeSensorMap = new HashMap<>(); // Client ID Key, Node Sensor Physical Address (WirelessNodeId) Value
-    private HashMap<String, MQTTSNClient> nodeSensorTimerMap = new HashMap<>(); // Client ID Key, MQTTSNClient (WirelessNodeId, keepALiveTime, lastSeen)
-    private HashMap<Integer, String> topicMap = new HashMap<>(); //Topid ID  key, Topic name Value
-    private HashMap<String, Integer> topicReverseMap = new HashMap<>(); //Topid name key, Topic ID Value
-    private HashMap<MQTTSNPacket, Integer> waitingQoSMap = new HashMap<>(); // Pesan PUBLISH key, WirelessNodeId value
+    private ConcurrentHashMap<String, Integer> nodeSensorMap = new ConcurrentHashMap<>(); // Client ID Key, Node Sensor Physical Address (WirelessNodeId) Value
+    private ConcurrentHashMap<String, MQTTSNClient> nodeSensorTimerMap = new ConcurrentHashMap<>(); // Client ID Key, MQTTSNClient (WirelessNodeId, keepALiveTime, lastSeen)
+    private ConcurrentHashMap<Integer, String> topicMap = new ConcurrentHashMap<>(); //Topid ID  key, Topic name Value
+    private ConcurrentHashMap<String, Integer> topicReverseMap = new ConcurrentHashMap<>(); //Topid name key, Topic ID Value
+    private ConcurrentHashMap<MQTTSNPacket, Integer> waitingQoSMap = new ConcurrentHashMap<>(); // Pesan PUBLISH key, WirelessNodeId value
     
-    private HashMap<Integer, Integer> globalIdMap = new HashMap<>(); // WirelessNodeId key, Global ID value
+    private ConcurrentHashMap<Integer, Integer> globalIdMap = new ConcurrentHashMap<>(); // WirelessNodeId key, Global ID value
     BlockingQueue<MQTTSNPacket> sendTaskQueue = new LinkedBlockingQueue<>();
 
     MqttAsyncClient client;
@@ -39,32 +39,26 @@ public class GatewayMQTTSN {
     
     private int topicIdIncrement = 1;
     
-    private final String PORT_NUMBER = "COM5";
+    private final String PORT_NUMBER = "COM4";
     private final int BROADCAST_INTERVAL_SECONDS = 30;
     private final int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
     DataConnection conn;
     BufferedOutputStream out; //For sending message to Preon32
     BufferedInputStream in;
 
-    // Dotenv dotenv = Dotenv.load();
-    // final String host = dotenv.get("MQTT_HOST");
-    // final String username = dotenv.get("MQTT_USER");
-    // final String password = dotenv.get("MQTT_PASS");
-    // final String host = "b6f0de39dbdb4fbc89413670aabed28a.s1.eu.hivemq.cloud"; 
     final String clientId = "raynercuanda";
-    final String host = "ssl://b6f0de39dbdb4fbc89413670aabed28a.s1.eu.hivemq.cloud:8883"; 
     final String host_tcp = "tcp://localhost:1883"; 
+    final String host = "ssl://b6f0de39dbdb4fbc89413670aabed28a.s1.eu.hivemq.cloud:8883"; 
     final String username = "admin" ;
     final String password = "Admin123"; 
 
     public static void main(String[] args) {
-        new GatewayDesktop().run();
+        new GatewayMQTTSN().run();
     }
 
     public void run() {
         runAggregate(); //  untuk send Publish
         initConnectionBroker(); // Connect ke broker
-        // handlePubRelTimeout();
         // handleClientTimeout();
         // initIOStream(); // Menjalankan Gateway Preon32 beserta IO-nya
         // runPortReader(); // Baca port USART
@@ -75,7 +69,7 @@ public class GatewayMQTTSN {
         Preon32Helper nodeHelper;
         try {
             nodeHelper = new Preon32Helper(PORT_NUMBER, 115200);
-            conn = nodeHelper.runModule("GatewayPreon32");
+            conn = nodeHelper.runModule("ForwarderMQTTSN");
             out = new BufferedOutputStream(conn.getOutputStream());
             in = new BufferedInputStream(conn.getInputStream());
             System.out.println("IO Stream initialized");
@@ -84,14 +78,13 @@ public class GatewayMQTTSN {
         }
     }
 
-    private void encapsulateAndSendToGW(int wirelessNodeId, MQTTSNPacket packet){
+    private void encapsulateAndSendToNodeSensor(int wirelessNodeId, MQTTSNPacket packet){
         byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, packet.toBytes());
-        sendToGatewayPreon32(packetToSend);
+        sendToForwarder(packetToSend);
     }
 
-    private void sendToGatewayPreon32(byte[] EncapsulatedMessage){
+    private void sendToForwarder(byte[] EncapsulatedMessage){
         try {
-            // System.out.println("sending to gateway preon32..");
             byte[] byteToSend = new byte[128];
             System.arraycopy(EncapsulatedMessage, 0, byteToSend, 0, EncapsulatedMessage.length);
             out.write(byteToSend);
@@ -112,7 +105,7 @@ public class GatewayMQTTSN {
                         
                         System.arraycopy(incomingByte, 0, encapsulatedMessage, 0, byteLength);
                         if ((encapsulatedMessage[1] & 0xFF)  == (MQTTSNPacket.ENCAPSULATED_MESSAGE & 0xFF)){ // Kalo msgType = 0xFE (EncapsulatedMessage)
-                            handleEncapsulatedMessage(encapsulatedMessage);
+                            handleEncapsulated(encapsulatedMessage);
                         }
 
                     } catch (Exception e) {
@@ -149,7 +142,7 @@ public class GatewayMQTTSN {
         }.start();
     }
 
-    private void handleEncapsulatedMessage(byte[] encapsulatedMessage){
+    private void handleEncapsulated(byte[] encapsulatedMessage){
         int lenNotMQTTSN = (int) (encapsulatedMessage[0] & 0xFF); // Panjang pesan diluar MQTT-SN
         
         byte[] wirelessNodeIdTemp = new byte[lenNotMQTTSN - 3]; // Di kurangi length, msgType, ctrl
@@ -171,21 +164,21 @@ public class GatewayMQTTSN {
             case MQTTSNPacket.SEARCHGW:{
                 System.out.println("Gateway received a SEARCHGW message");
                 response.setGWINFO(gatewayId, gatewayAddress);
-                encapsulateAndSendToGW(wirelessNodeId, response);
+                encapsulateAndSendToNodeSensor(wirelessNodeId, response);
                 break;
             }
             case MQTTSNPacket.CONNECT:{
-                System.out.println("Gateway received a CONNECT message");
                 int nodeLength = mqttsnPacket.getMsgHeader()[0]-6;
                 byte[] tempName = new byte[nodeLength];
                 System.arraycopy(mqttsnPacket.getMsgVarPart(), 4, tempName, 0, nodeLength);
                 String nodeName = new String(tempName);
+                System.out.println("Gateway received a CONNECT message from: "+nodeName);
 
                 int keepAliveTime = ((mqttsnPacket.getMsgVarPart()[2] & 0xFF ) << 8) | (mqttsnPacket.getMsgVarPart()[3] & 0xFF);
                 nodeSensorMap.put(nodeName, wirelessNodeId);
                 nodeSensorTimerMap.put(nodeName, new MQTTSNClient(wirelessNodeId, keepAliveTime));
                 response.setCONNACK( 0x00); // Accepted
-                encapsulateAndSendToGW(wirelessNodeId, response);
+                encapsulateAndSendToNodeSensor(wirelessNodeId, response);
                 break;
             }
             case MQTTSNPacket.REGISTER:{
@@ -209,10 +202,10 @@ public class GatewayMQTTSN {
                         topicReverseMap.put(topicName, topicId);
                     }
                     response.setREGACK(topicId, msgId, 0x00); //Success
-                    encapsulateAndSendToGW(wirelessNodeId, response);
+                    encapsulateAndSendToNodeSensor(wirelessNodeId, response);
                 } else{ // Kalo belum ada di map, suruh DISCONNECT
                     response.setDISCONNECT();
-                    encapsulateAndSendToGW(wirelessNodeId, response);
+                    encapsulateAndSendToNodeSensor(wirelessNodeId, response);
                 }
                 break;
             }
@@ -225,7 +218,7 @@ public class GatewayMQTTSN {
                     if (topicName == null){ // Ga ketemu mappingnya, jadi harus send PUBACK ke sensor
                         System.out.println("Gateway received a PUBLISH message, but topic not found. Sending PUBACK");
                         response.setPUBACK(topicId, messageId, 0x02); // Topic id invalid
-                        encapsulateAndSendToGW(wirelessNodeId, response);
+                        encapsulateAndSendToNodeSensor(wirelessNodeId, response);
                     } else {
                         System.out.println("Gateway received a PUBLISH message"+ topicName+" with topic id: "+topicId +"mesageID: "+messageId);
                         //Kalo Messaage ID != 0, artinya butuh alamat node sensor untuk dikirimin PUBACK
@@ -242,7 +235,7 @@ public class GatewayMQTTSN {
                     }
                 } else { // Kalo belum ada di map, suruh DISCONNECT
                     response.setDISCONNECT();
-                    encapsulateAndSendToGW(wirelessNodeId, response);
+                    encapsulateAndSendToNodeSensor(wirelessNodeId, response);
                 }
                 break;  
             }
@@ -256,7 +249,7 @@ public class GatewayMQTTSN {
                             // Kalo berhasil kirim PUBREL ke BROKER dan dapet balesan PUBCOMP dari Broker, kirim ke Node Sensor
                             MQTTSNPacket pubcompPacket = new MQTTSNPacket();
                             pubcompPacket.setPUBCOMP(messageId);
-                            encapsulateAndSendToGW(wirelessNodeId, pubcompPacket);
+                            encapsulateAndSendToNodeSensor(wirelessNodeId, pubcompPacket);
                             System.out.println("Sending PUBCOMP to Node Sensor with mesage ID: "+messageId);
                         }
                         
@@ -308,8 +301,6 @@ public class GatewayMQTTSN {
         }
 
         // Testing
-
-
         MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
         topicMap.put(0x01, "Topic Tes");
         mqttsnPacket.setPUBLISH(false, 2, true, 0x00, 0x01, 10, "Success");
@@ -321,17 +312,12 @@ public class GatewayMQTTSN {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
                     // Kalo dapet balesan PUBREC dari Broker, kirim ke Node Sensor
-                    MQTTSNPacket pubcompPacket = new MQTTSNPacket();
-                    pubcompPacket.setPUBCOMP(10);
-                    // encapsulateAndSendToGW(waitingQoSMap.get(mqttsnPacket), pubcompPacket);
-                    System.out.println("PUBCOMP send  to Node Sensor: "+10);
+                    System.out.println("Received PUBCOMP from Broker.");
                 }
                 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    // Kalo gagal dapet balesan dari broker.
                     System.out.println("Error sending PubRel to broker: " + exception.getMessage());
-                    waitingQoSMap.remove(mqttsnPacket);
                 }
             };
             Thread.sleep(10000);
@@ -371,7 +357,7 @@ public class GatewayMQTTSN {
                                     // Kalo dapet balesan dari Broker, kirim pesan PUBACK ke Node Sensor
                                     MQTTSNPacket pubackPacket = new MQTTSNPacket();
                                     pubackPacket.setPUBACK(topicId, messageId, 0x00);
-                                    encapsulateAndSendToGW(waitingQoSMap.remove(mqttsnPacket), pubackPacket);
+                                    encapsulateAndSendToNodeSensor(waitingQoSMap.remove(mqttsnPacket), pubackPacket);
                                 }
                                 
                                 @Override
@@ -379,7 +365,7 @@ public class GatewayMQTTSN {
                                     // Kalo gagal dapet balesan dari broker.
                                     MQTTSNPacket pubackPacket = new MQTTSNPacket();
                                     pubackPacket.setPUBACK(topicId, messageId, 0x01);
-                                    encapsulateAndSendToGW(waitingQoSMap.remove(mqttsnPacket), pubackPacket);
+                                    encapsulateAndSendToNodeSensor(waitingQoSMap.remove(mqttsnPacket), pubackPacket);
                                 }
                             };
                             token = client.publish(topicName, message, null, pubListener);
@@ -390,7 +376,7 @@ public class GatewayMQTTSN {
                                     // Kalo dapet balesan PUBREC dari Broker, kirim ke Node Sensor
                                     MQTTSNPacket pubrecPacket = new MQTTSNPacket();
                                     pubrecPacket.setPUBREC(messageId);
-                                    encapsulateAndSendToGW(waitingQoSMap.remove(mqttsnPacket), pubrecPacket);
+                                    encapsulateAndSendToNodeSensor(waitingQoSMap.remove(mqttsnPacket), pubrecPacket);
                                     System.out.println("Received Pubrec from Broker and sending it to Node Sensor");
                                 }
                                 
@@ -426,7 +412,7 @@ public class GatewayMQTTSN {
                         MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
                         mqttsnPacket.setADVERTISE(gatewayId);
                         byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(BROADCAST_ADDRESS, mqttsnPacket.toBytes());
-                        sendToGatewayPreon32(packetToSend);
+                        sendToForwarder(packetToSend);
                         // System.out.println("Broadcasting ADVERTISE message: "+java.util.Arrays.toString(packetToSend)); 
                         Thread.sleep(BROADCAST_INTERVAL_SECONDS*1000);
                     } catch (InterruptedException e){

@@ -1,11 +1,5 @@
-// ASUMSI: 
-// PASTI MENGGUNAKAN TOPIK ID, TIDAK ADA SHORT TOPIC NAME
-// NODE SENSOR HANYA BISA TERKONEKSI DENGAN 1 GATEWAY PADA 1 SAAT
-// MEMUNGKINKAN UNTUK GATEWAY TERGANTI DITENGGAH KARENA TIBA-TIBA MENDAPATKAN PESAN GWINFO.
-
 import java.io.IOException;
 import java.util.HashMap;
-
 import com.virtenio.driver.device.at86rf231.AT86RF231;
 import com.virtenio.driver.device.at86rf231.AT86RF231RadioDriver;
 import com.virtenio.preon32.node.Node;
@@ -15,45 +9,73 @@ import com.virtenio.radio.ieee_802_15_4.RadioDriver;
 import com.virtenio.radio.ieee_802_15_4.RadioDriverFrameIO;
 
 public class NodeSensor {
-	// private int COMMON_CHANNEL = 24; // channel
 	private int COMMON_PANID = 0xCAFE; // Personal Area Network ID
-	private String NODE_SENSOR_ID = "node_1"; // IDENTITAS NODE SENSOR
-	private int localAddress = 0x0002; // ALAMAT NODE SENSOR
-	private int BASESTATION_ADDR; // ALAMAT TUJUAN BASE STATION (AWAL BELUM DI ISI NILAI SEBELUM SEARCHGW)
-	private int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
-	
-	// Modifiedable
-	private long REGISTER_TIMEOUT = 10 * 1000; // 10s
-	private long PUBACK_TIMEOUT = 10 * 1000; // 10s
-	private int MAX_PUBACK_RETRY = 10;
-	
-	private final String tempTopic ="9017/Temperature";
-	private final String humTopic = "9017/Humidity";
-	private final String airTopic = "9017/AirPressure";
-	private final String accTopic = "9017/Vibration";
-	private long durationConnectionTime;
+	private int BASESTATION_ADDR; // Alamat Base station (Disii setelah dapat GWINFO)
+	private int BROADCAST_ADDRESS = 0xFFFF; //Alamat Broadcast
+
+	// Configuration for each node sensor
+	private final int localAddress = 0x0002; // ALAMAT NODE SENSOR
+	private final String NODE_SENSOR_ID = "node_1"; // IDENTITAS NODE SENSOR
+	private final String tempTopic ="9018/Temperature";
+	private final String humTopic = "9018/Humidity";
+	private final String airTopic = "9018/AirPressure";
+	private final String accTopic = "9018/Vibration";
 	 
-	private boolean isConnected = false;
-	private long timeLastReceive;
-	private long registerSentTime;
-	private int currentRegisterId = 0;
-	private int registerCounter = 1;
-	private int pubAckCounter = 1;
-	private HashMap<Integer, MQTTSNPacket> RegAckHashMap = new HashMap<Integer, MQTTSNPacket>();
-	// private HashMap<Integer, PublishHelper> pubAckHashMap = new HashMap<Integer, PublishHelper>(); //Diubah mengikuti specs (hanya bisa 1 ongoing (point 6.6))
-	private PublishHelper currentQoSPublish;
+	private long keepAliveTime; 
+	private long gwLastReceive; // Last time receiving message from Gateway
+	private long registerSentTime; 
+	private boolean isConnected = false; // is connected to Gateway
+	private int QoSCounter = 1; // QoS Message Id counter
+	private int registerCounter = 1; // Register Id counter
+	private int currentRegisterId = 0; // ongoing Register Id
+	private HashMap<Integer, MQTTSNPacket> RegAckHashMap = new HashMap<>(); //
 	
+	private PublishHelper currentOngoingQoS; // MQTTSNPacket, timeSent, retry count
 	private AT86RF231 radio;
 	private FrameIO fio;
+	private Preon32Sensor sensor;
 
 	private int tempTopicId;
 	private int humTopicId;
 	private int airTopicId;
 	private int accTopicId;
 	
-	public static void main(String [] args ) throws Exception
-	{
+	public static void main(String [] args ) throws Exception{
 		new NodeSensor().run();
+	}
+
+	public void run() throws Exception{
+		sensor = new Preon32Sensor();
+		sensor.init();
+		setupRadio();
+		runRadioReceiver();
+
+		while(true) {
+			if (BASESTATION_ADDR == 0x00) { //Kalo belum tau alamat GW, broadcast SEARCHGW ke setiap gateway
+				MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
+				mqttsnPacket.setSEARCHGW(0x00); //The value 0x00 means “broadcast to all nodes in the network”. 
+				send(mqttsnPacket, BROADCAST_ADDRESS);
+				System.out.println("Broadcasting SEARCHGW");
+				Thread.sleep(5000);
+			} else if (!isConnected){ // Jika address udah ada, buat koneksi dengan Gateway.
+				if(!handleGatewayTimeout()){
+					MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
+					mqttsnPacket.setCONNECT(NODE_SENSOR_ID, true, true, MQTTSNPacket.KEEP_ALIVE_TIME);
+					send(mqttsnPacket, BASESTATION_ADDR);
+					System.out.println("Send CONNECT to "+BASESTATION_ADDR);
+					Thread.sleep(5000);
+				}
+			} else if (isConnected){ //Jika sudah konek, maka akan selalu sense, terus publish
+				if(!handleGatewayTimeout()){
+					handleQoSTimeOut();
+					sendTemperature(2);
+					sendPressure(2);
+					sendAcceleration(1);
+					sendHumidity(0);
+					Thread.sleep(2000);
+				}
+			} 
+		}
 	}
 
     private void setupRadio() {
@@ -84,134 +106,42 @@ public class NodeSensor {
         }.start();
     }
 
-
-	public void run() throws Exception{
-		Preon32Sensor sensor = new Preon32Sensor();
-		sensor.init();
-		setupRadio();
-		runRadioReceiver();
-
-		//Kalo belum tau alamat GW, broadcast SEARCHGW ke setiap gateway
-		while(true) {
-			if (BASESTATION_ADDR == 0x00) {
-				MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-				mqttsnPacket.setSEARCHGW(0x00);
-				send(mqttsnPacket, BROADCAST_ADDRESS);
-				System.out.println("send searchgw");
-				 Thread.sleep(5000);
-				// Jika address udah ada, buat koneksi
-			} else if (!isConnected){
-				if(!handleGatewayTimeout()){ //Kalo timeout ga usah ngirim lagi
-					MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-					mqttsnPacket.setCONNECT(NODE_SENSOR_ID, true, true);
-					send(mqttsnPacket, BASESTATION_ADDR);
-					System.out.println("send connect");
-					Thread.sleep(5000);
-				}
-				//Jika sudah konek, maka akan selalu sense, terus publish
-			} else if (isConnected){
-				if(!handleGatewayTimeout()){
-//					handleTemperature(sensor);
-//					handlePressure(sensor);
-					handleAcceleration(sensor); // Qos 2
-//					handleHumidity(sensor); // QoS 1
-					handleQoSTimeOut();
-					Thread.sleep(30000);
-				}
-			} 
-		}
-	}
-
 	private void handleMessage(Frame frame){
-		timeLastReceive = System.currentTimeMillis();
+		gwLastReceive = System.currentTimeMillis();
 
-		byte[] tempPayload = frame.getPayload();
 		MQTTSNPacket packet = new MQTTSNPacket();
-		packet.toMQTTSN(tempPayload);
+		packet.toMQTTSN(frame.getPayload());
+
 		switch(packet.getMsgType()){
 			case MQTTSNPacket.ADVERTISE:{
-				System.out.println("Node Sensor received a ADVERTISE message");
+				System.out.println("Received a ADVERTISE message");
 				if (BASESTATION_ADDR == 0x00){
 					BASESTATION_ADDR = (int) frame.getSrcAddr();
 				}
-				if (BASESTATION_ADDR == (int) frame.getSrcAddr()){ // Kalo dapet advertise dari GW yang berbeda, di ignore
-					durationConnectionTime = ((packet.getMsgVarPart()[1] & 0xFF) << 8) | (packet.getMsgVarPart()[2] & 0xFF);
-					// durationConnectionTime = 90; //
+				if (BASESTATION_ADDR == frame.getSrcAddr()){
+					keepAliveTime = ((packet.getMsgVarPart()[1] & 0xFF) << 8) | (packet.getMsgVarPart()[2] & 0xFF);
 				}
 				break;
 			}
 			case MQTTSNPacket.GWINFO:{
-				System.out.println("Node Sensor received a GWINFO message");
+				System.out.println("Received a GWINFO message: ");
 				BASESTATION_ADDR = (int)frame.getSrcAddr();
-				durationConnectionTime = 90;
 				break;
 			}
 			case MQTTSNPacket.CONNACK:{
-				System.out.println("Node Sensor received a CONNACK message");
-				handleCONNACK(packet.getMsgVarPart()[0]);
+				keepAliveTime = MQTTSNPacket.KEEP_ALIVE_TIME; //Sesuai dengan pesan setCONNECT
+				System.out.println("Received a CONNACK message");
+				handleCONNACK(packet);
 				break;
 			}
 			case MQTTSNPacket.REGACK:{
-				System.out.println("Node Sensor received a REGACK message");
+				System.out.println("Received a REGACK message");
 				handleREGACK(packet);
 				break;
 			}
 			case MQTTSNPacket.PUBACK:{
-				//System.out.println("Node Sensor received a PUBACK message, Return Code: " + packet.getMsgVarPart()[4]);
-				//Return Code 0x02 (TopicId Invalid)
-				int messageId = ((packet.getMsgVarPart()[2] & 0xFF) << 8) | (packet.getMsgVarPart()[3] & 0xFF);
-				switch(packet.getMsgVarPart()[4]){
-					case 0x02:{
-						int currPubMsgId = ((currentQoSPublish.mqttsnMessage.getMsgVarPart()[2] & 0xFF) << 8) | (currentQoSPublish.mqttsnMessage.getMsgVarPart()[3] & 0xFF);
-						if (messageId != 0 && messageId == currPubMsgId) {
-							currentQoSPublish = null;
-						}
-						int topicId = ((packet.getMsgVarPart()[0] & 0xFF) << 8) | (packet.getMsgVarPart()[1] & 0xFF);
-						if(tempTopicId == topicId){
-							tempTopicId = 0;
-						} else if(humTopicId == topicId){
-							humTopicId = 0;
-						} else if(airTopicId == topicId){
-							airTopicId = 0;
-						} else if(accTopicId == topicId){
-							accTopicId = 0;	
-						}
-						break;
-					}
-					case 0x00:{
-						byte[] currPacketPart = currentQoSPublish.mqttsnMessage.getMsgVarPart();
-						int currPubId = ((currPacketPart[3] & 0xFF) << 8) | (currPacketPart[4] & 0xFF);
-						if (messageId == currPubId){
-							System.out.println("PUBACK Accepted, clearing current PUBACK");
-							currentQoSPublish = null;
-						} else{
-							System.out.println("PUBACK Accepted, but invalid message id.");
-						}
-						break;
-					}
-					case 0x01:{
-						System.out.println("Gateway REJECTED: CONGESTION");						
-						if (currentQoSPublish != null){
-							if (currentQoSPublish.counter > MAX_PUBACK_RETRY){
-								System.out.println("Max Puback Reached, removing from hashmap..");
-								currentQoSPublish = null;
-							} else {
-								//bit modification supaya dup jadi true
-								byte flagsWithDup = (byte) (currentQoSPublish.mqttsnMessage.getMsgVarPart()[0] | 0x80);
-								currentQoSPublish.mqttsnMessage.getMsgVarPart()[0] = flagsWithDup;
-		
-								send(currentQoSPublish.mqttsnMessage, BASESTATION_ADDR);
-		
-								currentQoSPublish.timeSent = System.currentTimeMillis();
-								currentQoSPublish.counter++;
-								System.out.println("Resending Publish with Message ID: "+messageId);
-							}
-						}
-						break;
-					}
-					default:
-						System.out.println("Unknown Reason");
-				}
+				System.out.println("Received a PUBACK message");
+				handlePubAck(packet);
 				break;
 			}
 			case MQTTSNPacket.DISCONNECT:{
@@ -224,23 +154,22 @@ public class NodeSensor {
 				break;
 			}
 			case MQTTSNPacket.PUBREC:{
-				if (currentQoSPublish == null){
-					break; 
-				}
+				if (currentOngoingQoS == null) break; // udah di acknowledge berarti
+
 				int messageId = ((packet.getMsgVarPart()[0] & 0xFF) << 8) | (packet.getMsgVarPart()[1] & 0xFF);
 				MQTTSNPacket res = new MQTTSNPacket();
 				res.setPUBREL(messageId);
 				send(res, BASESTATION_ADDR);
 				System.out.println("Receiving PUBREC ("+messageId+"), Sending PUBREL.. ");
 
-				currentQoSPublish.mqttsnMessage = res;
-				currentQoSPublish.counter = 1;
-				currentQoSPublish.timeSent = System.currentTimeMillis();
+				currentOngoingQoS.mqttsnMessage = res;
+				currentOngoingQoS.counter = 1;
+				currentOngoingQoS.timeSent = System.currentTimeMillis();
 				break;
 			}
 			case MQTTSNPacket.PUBCOMP:{
 				System.out.println("Receiving PUBCOMP");
-				currentQoSPublish = null;
+				currentOngoingQoS = null;
 				break;
 			}
 		}
@@ -259,90 +188,44 @@ public class NodeSensor {
 
         try {
             fio.transmit(testFrame);
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 	}
 
-	private void handleQoSTimeOut(){ // SEND PUBLISH / PUBREL AFTER TIMEOUT DEPENDING CURRENTQOSPUBLISH
-		if (currentQoSPublish == null){
-			System.out.println("CurrenQoSPublish is null");
+	private void handleQoSTimeOut(){ 
+		// Kalo Belum ada yang di publish, langsung return
+		if (currentOngoingQoS == null){ 
 			return;
 		}
 
-		if (currentQoSPublish.counter > MAX_PUBACK_RETRY){
+		// Kalo currentOngoingQoS udah melewati maximum retry, timeout
+		if (currentOngoingQoS.counter > MQTTSNPacket.MAX_PUBACK_RETRY){
 			System.out.println("Current QoS Exceed maximum PubAck retry");
-			currentQoSPublish = null;
+			currentOngoingQoS = null;
 			return;
 		}
 
-		if (System.currentTimeMillis() - currentQoSPublish.timeSent > PUBACK_TIMEOUT){
-			MQTTSNPacket packet = currentQoSPublish.mqttsnMessage;
+		// send ulang kalo, udah melewati waktu timeout dan masih dibawah maximum retry 
+		if (System.currentTimeMillis() - currentOngoingQoS.timeSent > MQTTSNPacket.PUBACK_TIMEOUT){
+			MQTTSNPacket packet = currentOngoingQoS.mqttsnMessage;	
 			
+			//bit modification supaya dup jadi true (untuk pesan PUBLISH)
 			if(packet.getMsgType() == (MQTTSNPacket.PUBLISH & 0xFF)){
-				//bit modification supaya dup jadi true (Khusus PUBLISH AJA)
 				byte flagsWithDup = (byte) (packet.getMsgVarPart()[0] | 0x80);
-				packet.getMsgVarPart()[0] = flagsWithDup;
+				currentOngoingQoS.mqttsnMessage.getMsgVarPart()[0] = flagsWithDup;
 				System.out.println("Resending Publish: Timeout");
 			} else {
 				System.out.println("Resending Pubrel: Timeout");
 			}
-			send(currentQoSPublish.mqttsnMessage, BASESTATION_ADDR);
-			currentQoSPublish.timeSent = System.currentTimeMillis();
-			currentQoSPublish.counter++;
+			send(currentOngoingQoS.mqttsnMessage, BASESTATION_ADDR);
+			currentOngoingQoS.timeSent = System.currentTimeMillis();
+			currentOngoingQoS.counter++;
 		}
 	}
 
-	private void handleREGACK(MQTTSNPacket mqttsnPacket){
-	
-		int topicId = ((mqttsnPacket.getMsgVarPart()[0] & 0xFF) << 8) | (mqttsnPacket.getMsgVarPart()[1] & 0xFF); // Topic Id: 0,1
-		int messageId = ((mqttsnPacket.getMsgVarPart()[2] & 0xFF) << 8) | (mqttsnPacket.getMsgVarPart()[3] & 0xFF); // Message Id: 2,3
-		if (messageId != currentRegisterId){ // Artinya messageID yang sebelumnya udah di hapus, jadi ga usah di proses karena udah ga ada di Map.
-			return;
-		}
-		switch (mqttsnPacket.getMsgVarPart()[4]){
-			case 0x00:
-				byte[] oldPacket = RegAckHashMap.remove(messageId).getMsgVarPart();
-				byte[] topic_name = new byte[oldPacket.length-4];
-				System.arraycopy(oldPacket,  4, topic_name, 0, oldPacket.length-4); // Copy topic name
-				String topicNameStr = new String(topic_name);
-
-				switch (topicNameStr){
-					case tempTopic:
-						System.out.println("Temperature Registered");
-						tempTopicId = topicId;
-						break;
-					case airTopic:
-						System.out.println("Air Pressure Registered");
-						airTopicId = topicId;
-						break;
-					case humTopic:
-						System.out.println("Humidity Registered");
-						humTopicId = topicId;
-						break;
-					case accTopic:
-						System.out.println("Acceleration Registered");
-						accTopicId = topicId;
-						break;
-				}
-				break;
-			case 0x01:
-				System.out.println("Gateway REJECTED: CONGESTION");
-				RegAckHashMap.remove(messageId);
-				break;
-			case 0x02:
-				System.out.println("Gateway REJECTED: INVALID TOPIC ID");
-				RegAckHashMap.remove(messageId);
-				break;
-			case 0x03:
-				System.out.println("Gateway REJECTED: not SUPPORTED");
-				RegAckHashMap.remove(messageId);
-				break;
-			}
-		currentRegisterId = 0;
-	}
-
-	private void handleCONNACK(byte returnCode){
+		private void handleCONNACK(MQTTSNPacket packet){
+		int returnCode = packet.getMsgVarPart()[0];
 		switch (returnCode){
 			case 0x00:
 				this.isConnected = true;
@@ -362,12 +245,139 @@ public class NodeSensor {
 		}
 	}
 
+	private void handleREGACK(MQTTSNPacket mqttsnPacket){
+	
+		int topicId = ((mqttsnPacket.getMsgVarPart()[0] & 0xFF) << 8) | (mqttsnPacket.getMsgVarPart()[1] & 0xFF);
+		int messageId = ((mqttsnPacket.getMsgVarPart()[2] & 0xFF) << 8) | (mqttsnPacket.getMsgVarPart()[3] & 0xFF); 
+		if (messageId != currentRegisterId){ // Artinya messageID yang sebelumnya udah di hapus, jadi ga usah di proses karena udah ga ada di Map.
+			return;
+		}
+		int returnCode = mqttsnPacket.getMsgVarPart()[4];
+		switch (returnCode){
+			case 0x00:
+				byte[] oldPacket = RegAckHashMap.remove(messageId).getMsgVarPart();
+				byte[] topic_name = new byte[oldPacket.length-4];
+				System.arraycopy(oldPacket,  4, topic_name, 0, oldPacket.length-4); // Copy topic name
+				String topicNameStr = new String(topic_name);
+
+				switch (topicNameStr){
+					case tempTopic:
+						tempTopicId = topicId;
+						System.out.println("Temperature Registered");
+						break;
+					case airTopic:
+						airTopicId = topicId;
+						System.out.println("Air Pressure Registered");
+						break;
+					case humTopic:
+						humTopicId = topicId;
+						System.out.println("Humidity Registered");
+						break;
+					case accTopic:
+						accTopicId = topicId;
+						System.out.println("Acceleration Registered");
+						break;
+				}
+				break;
+			case 0x01:
+				System.out.println("Gateway REJECTED: CONGESTION");
+				RegAckHashMap.remove(messageId);
+				break;
+			case 0x02:
+				System.out.println("Gateway REJECTED: INVALID TOPIC ID");
+				RegAckHashMap.remove(messageId);
+				break;
+			case 0x03:
+				System.out.println("Gateway REJECTED: not SUPPORTED");
+				RegAckHashMap.remove(messageId);
+				break;
+			}
+		currentRegisterId = 0;
+	}
+
+	private void handlePubAck(MQTTSNPacket mqttsnPacket){
+		
+		int pubackId = ((mqttsnPacket.getMsgVarPart()[2] & 0xFF) << 8) | (mqttsnPacket.getMsgVarPart()[3] & 0xFF);
+		int returnCode = mqttsnPacket.getMsgVarPart()[4];
+		switch(returnCode){
+			case 0x00: { //  untuk QoS 1
+				if (currentOngoingQoS != null){
+					System.out.println("There's no ongoing publish with QoS 1");
+					break; // Pesan QoS sudah diacknowledge
+				} 
+				if (pubackId == 0) {
+					System.out.println("Error: Accepted Puback with messageId 0");
+					break;
+				}
+
+				byte[] publishVar = currentOngoingQoS.mqttsnMessage.getMsgVarPart();
+				int publishId = ((publishVar[3] & 0xFF) << 8) | (publishVar[4] & 0xFF);
+				if (pubackId == publishId){
+					currentOngoingQoS = null;
+					System.out.println("PUBACK Accepted, clearing current PUBACK");
+				} else{
+					System.out.println("PUBACK Accepted, but invalid message id.");
+				}
+				break;
+			}
+			case 0x01:{
+				System.out.println("Gateway REJECTED: CONGESTION");
+				if (pubackId == 0) break; // Pesan dengan QoS 0
+
+				if (currentOngoingQoS == null) {
+					System.out.println("No Ongoing QoS message"); // Pesan QoS > 0, tapi currentOngoingQoS null 
+					break;
+				} 
+
+				if (currentOngoingQoS.counter > MQTTSNPacket.MAX_PUBACK_RETRY){
+					System.out.println("Max Puback Reached, removing from hashmap..");
+					currentOngoingQoS = null;
+				} else {
+					if (mqttsnPacket.getMsgType() == (MQTTSNPacket.PUBLISH & 0xFF)){
+						//bit modification supaya dup jadi true (khusus PUBLISH)
+						byte flagsWithDup = (byte) (currentOngoingQoS.mqttsnMessage.getMsgVarPart()[0] | 0x80);
+						currentOngoingQoS.mqttsnMessage.getMsgVarPart()[0] = flagsWithDup;
+					}
+					System.out.println("Resending ongoing QoS: "+pubackId); // Bisa kirim PUBLISH QoS 1, 2, PUBREL
+					send(currentOngoingQoS.mqttsnMessage, BASESTATION_ADDR);
+					currentOngoingQoS.timeSent = System.currentTimeMillis();
+					currentOngoingQoS.counter++;
+				}
+				break;
+			}
+			case 0x02:{ // Invalid Topic : Qos 0, 1, 2 
+				System.out.println("Gateway Rejected: Invalid Topic ID");
+				// Clearing current topic ID
+				int topicId = ((mqttsnPacket.getMsgVarPart()[0] & 0xFF) << 8) | (mqttsnPacket.getMsgVarPart()[1] & 0xFF);
+				if (tempTopicId == topicId){
+					tempTopicId = 0;
+				} else if(humTopicId == topicId){
+					humTopicId = 0;
+				} else if(airTopicId == topicId){
+					airTopicId = 0;
+				} else if(accTopicId == topicId){
+					accTopicId = 0;	
+				}
+				if (pubackId != 0){
+					byte[] publishVar = currentOngoingQoS.mqttsnMessage.getMsgVarPart();
+					int publishId = ((publishVar[3] & 0xFF) << 8) | (publishVar[4] & 0xFF);
+					if (pubackId == publishId) {
+						currentOngoingQoS = null;
+					}
+				}
+				break;
+			}
+			default:
+				System.out.println("Returncode Invalid");
+		}
+	}
+
 	private boolean handleGatewayTimeout(){
-		long time_since_receive_from_gw = ((System.currentTimeMillis() - timeLastReceive) / 1000);
+		long time_since_receive_from_gw = ((System.currentTimeMillis() - gwLastReceive) / 1000);
 		System.out.println(time_since_receive_from_gw+" seconds since receiving something from GW");
-		if (time_since_receive_from_gw > durationConnectionTime){
+		if (time_since_receive_from_gw > keepAliveTime){
 			 isConnected = false; 
-			 BASESTATION_ADDR = (byte)0x00;
+			 BASESTATION_ADDR = (byte) 0x00;
 			 tempTopicId = 0;
 			 humTopicId = 0;
 			 airTopicId = 0;
@@ -378,108 +388,90 @@ public class NodeSensor {
 		return false;
 	}
 
-	private void sendQoS0(String payload, int topicID){
+	private void sendPublish(String payload, int topicID, int qos){
+		if ( qos > 0 && currentOngoingQoS != null){
+			System.out.println("There's currently QoS message sent. Current message is dropped.");
+			return;
+		} 
+			
+		int messageId = (qos > 0) ? QoSCounter : 0; // qos -1, 0 (messageID = 0), qos 1,2
 		MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-		mqttsnPacket.setPUBLISH(false, 0, true, 0x00, topicID, 0, payload);
+		
+		mqttsnPacket.setPUBLISH(false, qos, true, 0x00, topicID, messageId, payload);
+		if (qos > 0){
+			currentOngoingQoS = new PublishHelper(mqttsnPacket, System.currentTimeMillis());
+			increaseQoSCounter();
+		} 
 		send(mqttsnPacket, BASESTATION_ADDR);
 	}
 
-	private void sendQoS1(String payload, int topicID){
-		if (currentQoSPublish != null){
-			System.out.println("There's currently QoS message sent. Current message is dropped.");
+	private void sendTemperature(int qos){
+		if (!isConnected) return;
+		if (tempTopicId == 0) {
+			handleRegister(tempTopic, tempTopicId);
 		} else {
-			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-			mqttsnPacket.setPUBLISH(false, 1, true, 0x00, topicID, pubAckCounter, payload);
-			
-			currentQoSPublish = new PublishHelper(mqttsnPacket, System.currentTimeMillis());
-			send(mqttsnPacket, BASESTATION_ADDR);
-			increasePuBackCounter();
+			sendPublish(sensor.getTemperatureValue(), tempTopicId, qos);
+			System.out.println("Publishing Temperature");
 		}
 	}
-
-	private void sendQoS2(String payload, int topicID){
-		if (currentQoSPublish != null){
-			System.out.println("There's currently QoS message sent. Current message is dropped.");
-		} else {
-			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-			mqttsnPacket.setPUBLISH(false, 2, true, 0x00, topicID, pubAckCounter, payload);
-			
-			System.out.println("Send QoS 2, message ID: "+pubAckCounter);
-			currentQoSPublish = new PublishHelper(mqttsnPacket, System.currentTimeMillis());
-			send(mqttsnPacket, BASESTATION_ADDR);
-			increasePuBackCounter();
-		}
-	}
-
-	private void handleHumidity(Preon32Sensor sensor){
-		if (!isConnected)return;
+	
+	private void sendHumidity(int qos){
+		if (!isConnected) return;
 		if (humTopicId == 0) {
-			handleRegister(humTopic, humTopicId); // Supaya kalo gateway timeout ga register 
+			handleRegister(humTopic, humTopicId); 
 		} else {
-			// Contoh pesan Publish dengan QoS 0
-			// sendQoS0(sensor.getHumidityValue(), humTopicId);
-
-			//  Contoh pesan Publish dengan QoS 1
-			sendQoS1(sensor.getHumidityValue(), humTopicId);
+			sendPublish(sensor.getHumidityValue(), humTopicId, qos);
+			System.out.println("Publishing Humidity");
 		}
 	}
 
-	private void handleAcceleration(Preon32Sensor sensor){
-		if (!isConnected)return;
+	private void sendAcceleration(int qos){
+		if (!isConnected) return;
 		if (accTopicId == 0) {
 			handleRegister(accTopic, accTopicId);
 		} else {
-//			sendQoS0(sensor.getAccelValue(), accTopicId);
-			sendQoS2(sensor.getAccelValue(), accTopicId);
+			sendPublish(sensor.getAccelValue(), accTopicId, qos);
 			System.out.println("Publishing Acceleration");
 		}
 	}
 
-	private void handleTemperature(Preon32Sensor sensor){
-		if (!isConnected)return;
-		if (tempTopicId == 0) {
-			handleRegister(tempTopic, tempTopicId);
-		} else {
-			sendQoS0(sensor.getTemperatureValue(), tempTopicId);
-			System.out.println("Publishing Temperature");
-		}
-	}
-
-	private void handlePressure(Preon32Sensor sensor){
+	private void sendPressure(int qos){
 		if (!isConnected)return;
 		if (airTopicId == 0) {
 			handleRegister(airTopic, airTopicId);
 		} else {
-			sendQoS0(sensor.getPressureValue(), airTopicId);
+			sendPublish(sensor.getPressureValue(), airTopicId, qos);
 			System.out.println("Publishing Air Pressure");
 		}
 	}
 	
 	private void handleRegister(String topicName, int topicId){
-		if (topicId == 0){
-			if (currentRegisterId == 0){ // Kalo belum ada paket yang sedang di daftarkan
-				MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-				mqttsnPacket.setREGISTER(0, registerCounter, topicName); //topicId pasti 0, kalau di kirim Client (Node sensor) 
-				RegAckHashMap.put(registerCounter, mqttsnPacket);
-				currentRegisterId = registerCounter;
-				send(mqttsnPacket, BASESTATION_ADDR);
-				registerSentTime = System.currentTimeMillis();
-				registerCounter++;
-				System.out.println("Registering "+topicName);
-			} else{ // Kalo udah ada yang di daftar, coba cek timeout. Kalo time out, hapus dari regack map 
-				if (System.currentTimeMillis() - registerSentTime > REGISTER_TIMEOUT){
-					System.out.println("REGISTER timeout: no REGACK received");
-					RegAckHashMap.remove(currentRegisterId);
-					currentRegisterId = 0;
-				}
+		if (topicId != 0) return;
+
+		if (currentRegisterId == 0){ // Kalo belum ada paket yang sedang di daftarkan
+			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
+			mqttsnPacket.setREGISTER(0, registerCounter, topicName); //topicId pasti 0, kalau di kirim Client (Node sensor) 
+			RegAckHashMap.put(registerCounter, mqttsnPacket);
+			currentRegisterId = registerCounter;
+			
+			send(mqttsnPacket, BASESTATION_ADDR);
+			registerSentTime = System.currentTimeMillis();
+			registerCounter++;
+			System.out.println("Registering: "+topicName);
+		} else{ // Kalo udah ada yang di daftar, coba cek timeout. Kalo time out, hapus dari regack map 
+			if (System.currentTimeMillis() - registerSentTime > MQTTSNPacket.REGISTER_TIMEOUT){
+				System.out.println("REGISTER timeout: no REGACK received");
+				RegAckHashMap.remove(currentRegisterId);
+				currentRegisterId = 0;
 			}
 		}
 	}
 
-	private void increasePuBackCounter(){
-        pubAckCounter++;
-        if (this.pubAckCounter > 65535){
-                this.pubAckCounter = 1;
+	// MessageID maximum 65535 (2 byte)
+	private void increaseQoSCounter(){
+        QoSCounter++;
+        if (this.QoSCounter > 65535){
+                this.QoSCounter = 1;
         } 
     }
 }

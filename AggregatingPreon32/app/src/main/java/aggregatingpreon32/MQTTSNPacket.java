@@ -31,7 +31,10 @@ public class MQTTSNPacket {
     // public static final byte PINGRESP = 0x17;
     public static final byte DISCONNECT = 0x18;
 
-    private int keepAliveTime = 90; // seconds * DEFAULT TIME FOR ADVERTISE, CONNECT (CHANGEABLE)
+    public static final int KEEP_ALIVE_TIME = 90; // seconds * DEFAULT TIME FOR ADVERTISE, CONNECT (CHANGEABLE)
+	public static final long REGISTER_TIMEOUT = 10 * 1000; // 10s
+	public static final long PUBACK_TIMEOUT = 10 * 1000; // 10s
+	public static final int MAX_PUBACK_RETRY = 10;
 
     private static final byte flags_topicIdType_normal      = (byte) 0x00;
     private static final byte flags_topicIdType_pre         = (byte) 0x01;
@@ -92,8 +95,8 @@ public class MQTTSNPacket {
         
         this.msgVariablePart = new byte[msgVariablePartLength];
         this.msgVariablePart[0] = (byte) gwId; 
-        this.msgVariablePart[1] = (byte) ((keepAliveTime >> 8) & 0xFF); // High Byte (MSB)
-        this.msgVariablePart[2] = (byte) (keepAliveTime & 0xFF);        // Low Byte (LSB) 
+        this.msgVariablePart[1] = (byte) ((KEEP_ALIVE_TIME >> 8) & 0xFF); // High Byte (MSB)
+        this.msgVariablePart[2] = (byte) (KEEP_ALIVE_TIME & 0xFF);        // Low Byte (LSB) 
     }
 
     public void setSEARCHGW(int radius){
@@ -116,7 +119,7 @@ public class MQTTSNPacket {
         System.arraycopy(gwAddressBytes, 0, msgVariablePart, 1, gwAddressBytes.length);   
     }
 
-    public void setCONNECT(String clientID, boolean flag_cleansession, boolean flag_will) {
+    public void setCONNECT(String clientID, boolean flag_cleansession, boolean flag_will, int keepAliveTime) {
         byte[] clientIdBytes = clientID.getBytes();
         int msgVariablePartLength = 1 + 1 + 2 + clientIdBytes.length; //Flags (0), Protocol ID (1), Duration (2 & 3), ClientID (4:n)
         
