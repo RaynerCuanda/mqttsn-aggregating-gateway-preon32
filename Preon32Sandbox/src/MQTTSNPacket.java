@@ -29,7 +29,6 @@ public class MQTTSNPacket {
     // public static final byte PINGRESP = 0x17;
     public static final byte DISCONNECT = 0x18;
 
-    public static final int KEEP_ALIVE_TIME = 90; // seconds * DEFAULT TIME FOR ADVERTISE, CONNECT (CHANGEABLE)
 	public static final long REGISTER_TIMEOUT = 10 * 1000; // 10s
 	public static final long PUBACK_TIMEOUT = 10 * 1000; // 10s
 	public static final int MAX_PUBACK_RETRY = 10;

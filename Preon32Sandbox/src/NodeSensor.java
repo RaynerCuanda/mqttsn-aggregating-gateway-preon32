@@ -19,25 +19,20 @@ public class NodeSensor {
 	private final String humTopic = "9018/Humidity";
 	private final String airTopic = "9018/AirPressure";
 	private final String accTopic = "9018/Vibration";
+	private final long keepAliveTime = 90; // 90 detik
 	 
-	private long keepAliveTime; 
+	private boolean isConnected; // is connected to Gateway
 	private long gwLastReceive; // Last time receiving message from Gateway
 	private long registerSentTime; 
-	private boolean isConnected = false; // is connected to Gateway
-	private int QoSCounter = 1; // QoS Message Id counter
-	private int registerCounter = 1; // Register Id counter
 	private int currentRegisterId = 0; // ongoing Register Id
+	private int messageIdCounter = 1; // Register Id counter
 	private HashMap<Integer, MQTTSNPacket> RegAckHashMap = new HashMap<>(); //
+	private HashMap<String, int>  = topicMap new HashMap<>(); //
 	
-	private PublishHelper currentOngoingQoS; // MQTTSNPacket, timeSent, retry count
+	private PublishHelper currentOngoingQoS; // MQTTSNPacket, timeSent, retry count ~ untuk keep track dari kapan terakhir publish qos 1/2 di kirim
 	private AT86RF231 radio;
 	private FrameIO fio;
 	private Preon32Sensor sensor;
-
-	private int tempTopicId;
-	private int humTopicId;
-	private int airTopicId;
-	private int accTopicId;
 	
 	public static void main(String [] args ) throws Exception{
 		new NodeSensor().run();
@@ -50,27 +45,28 @@ public class NodeSensor {
 		runRadioReceiver();
 
 		while(true) {
-			if (BASESTATION_ADDR == 0x00) { //Kalo belum tau alamat GW, broadcast SEARCHGW ke setiap gateway
+			if (BASESTATION_ADDR == 0x00){ //Kalo belum tau alamat GW, broadcast SEARCHGW ke setiap gateway
 				MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 				mqttsnPacket.setSEARCHGW(0x00); //The value 0x00 means “broadcast to all nodes in the network”. 
 				send(mqttsnPacket, BROADCAST_ADDRESS);
 				System.out.println("Broadcasting SEARCHGW");
 				Thread.sleep(5000);
 			} else if (!isConnected){ // Jika address udah ada, buat koneksi dengan Gateway.
-				if(!handleGatewayTimeout()){
+				if(!isGatewayTimeout())
+					{
 					MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-					mqttsnPacket.setCONNECT(NODE_SENSOR_ID, true, true, MQTTSNPacket.KEEP_ALIVE_TIME);
+					mqttsnPacket.setCONNECT(NODE_SENSOR_ID, true, true, KeepAliveTime);
 					send(mqttsnPacket, BASESTATION_ADDR);
 					System.out.println("Send CONNECT to "+BASESTATION_ADDR);
 					Thread.sleep(5000);
 				}
 			} else if (isConnected){ //Jika sudah konek, maka akan selalu sense, terus publish
-				if(!handleGatewayTimeout()){
-					handleQoSTimeOut();
-					sendTemperature(2);
-					sendPressure(2);
-					sendAcceleration(1);
-					sendHumidity(0);
+				if(!isGatewayTimeout()){
+					isQoSTimeOut();
+					sendPublish(tempTopic, sensor.getTemperatureValue(), 2);
+					sendPublish(airTopic, sensor.getPressureValue(), 2);
+					sendPublish(humTopic, sensor.getHumidityValue(), 2);
+					sendPublish(accTopic, sensor.getAccelValue(), 2);
 					Thread.sleep(2000);
 				}
 			} 
@@ -128,7 +124,6 @@ public class NodeSensor {
 				break;
 			}
 			case MQTTSNPacket.CONNACK:{
-				keepAliveTime = MQTTSNPacket.KEEP_ALIVE_TIME; //Sesuai dengan pesan setCONNECT
 				System.out.println("Received a CONNACK message");
 				handleCONNACK(packet);
 				break;
@@ -144,15 +139,14 @@ public class NodeSensor {
 				break;
 			}
 			case MQTTSNPacket.DISCONNECT:{
+				System.out.println("Received a DISCONNECT message");
 				isConnected = false; 
 				BASESTATION_ADDR = 0x00;
-				tempTopicId = 0;
-				humTopicId = 0;
-				airTopicId = 0;
-				accTopicId = 0;
+				topicMap.clear();
 				break;
 			}
 			case MQTTSNPacket.PUBREC:{
+				System.out.println("Received a PUBREC message, sending PUBREL");
 				if (currentOngoingQoS == null) break; // Sudah di acknowledge: skip aja
 
 				int messageId = ((packet.getMsgVarPart()[0] & 0xFF) << 8) | (packet.getMsgVarPart()[1] & 0xFF);
@@ -167,8 +161,16 @@ public class NodeSensor {
 				break;
 			}
 			case MQTTSNPacket.PUBCOMP:{
-				System.out.println("Receiving PUBCOMP");
-				currentOngoingQoS = null;
+				int pubcompId = ((packet.getMsgVarPart()[0] & 0xFF) << 8) | (packet.getMsgVarPart()[1] & 0xFF);
+				MQTTSNPacket pubrel = currentOngoingQoS.mqttsnMessage;
+				int pubrelId =  ((pubrel.getMsgVarPart()[0] & 0xFF) << 8) | (pubrel.getMsgVarPart()[1] & 0xFF);
+
+				if (pubrelId == pubcompId){
+					System.out.println("Received a PUBCOMP message");
+					currentOngoingQoS = null;
+				} else {
+					System.out.println("Received PUBCOMP with wrong message Id");
+				}
 				break;
 			}
 		}
@@ -192,7 +194,7 @@ public class NodeSensor {
         }
 	}
 
-	private void handleQoSTimeOut(){ 
+	private void isQoSTimeOut(){ 
 		// Kalo Belum ada yang di publish, langsung return
 		if (currentOngoingQoS == null){ 
 			return;
@@ -248,7 +250,7 @@ public class NodeSensor {
 	
 		int topicId = ((mqttsnPacket.getMsgVarPart()[0] & 0xFF) << 8) | (mqttsnPacket.getMsgVarPart()[1] & 0xFF);
 		int messageId = ((mqttsnPacket.getMsgVarPart()[2] & 0xFF) << 8) | (mqttsnPacket.getMsgVarPart()[3] & 0xFF); 
-		if (messageId != currentRegisterId){ // Artinya messageID yang sebelumnya udah di hapus, jadi ga usah di proses karena udah ga ada di Map.
+		if (messageId != currentRegisterId){ // messageID yang sebelumnya udah di hapus, jadi ga usah di proses karena udah ga ada di Map.
 			return;
 		}
 		int returnCode = mqttsnPacket.getMsgVarPart()[4];
@@ -259,24 +261,7 @@ public class NodeSensor {
 				System.arraycopy(oldPacket,  4, topic_name, 0, oldPacket.length-4); // Copy topic name
 				String topicNameStr = new String(topic_name);
 
-				switch (topicNameStr){
-					case tempTopic:
-						tempTopicId = topicId;
-						System.out.println("Temperature Registered");
-						break;
-					case airTopic:
-						airTopicId = topicId;
-						System.out.println("Air Pressure Registered");
-						break;
-					case humTopic:
-						humTopicId = topicId;
-						System.out.println("Humidity Registered");
-						break;
-					case accTopic:
-						accTopicId = topicId;
-						System.out.println("Acceleration Registered");
-						break;
-				}
+				topicMap.put(topicNameStr, topicId);
 				break;
 			case 0x01:
 				System.out.println("Gateway REJECTED: CONGESTION");
@@ -348,15 +333,7 @@ public class NodeSensor {
 				System.out.println("Gateway Rejected: Invalid Topic ID");
 				// Clearing current topic ID
 				int topicId = ((mqttsnPacket.getMsgVarPart()[0] & 0xFF) << 8) | (mqttsnPacket.getMsgVarPart()[1] & 0xFF);
-				if (tempTopicId == topicId){
-					tempTopicId = 0;
-				} else if(humTopicId == topicId){
-					humTopicId = 0;
-				} else if(airTopicId == topicId){
-					airTopicId = 0;
-				} else if(accTopicId == topicId){
-					accTopicId = 0;	
-				}
+				topicMap.values().remove(topicId);
 				if (pubackId != 0){
 					byte[] publishVar = currentOngoingQoS.mqttsnMessage.getMsgVarPart();
 					int publishId = ((publishVar[3] & 0xFF) << 8) | (publishVar[4] & 0xFF);
@@ -371,91 +348,54 @@ public class NodeSensor {
 		}
 	}
 
-	private boolean handleGatewayTimeout(){
+	private boolean isGatewayTimeout(){
 		long time_since_receive_from_gw = ((System.currentTimeMillis() - gwLastReceive) / 1000);
 		System.out.println(time_since_receive_from_gw+" seconds since receiving something from GW");
 		if (time_since_receive_from_gw > keepAliveTime){
-			 isConnected = false; 
-			 BASESTATION_ADDR = (byte) 0x00;
-			 tempTopicId = 0;
-			 humTopicId = 0;
-			 airTopicId = 0;
-			 accTopicId = 0;
-			 System.out.println("Connection Time out!");
-			 return true;
+			isConnected = false; 
+			BASESTATION_ADDR = (byte) 0x00;
+			topicMap.clear();
+			System.out.println("Connection Time out!");
+			return true;
 		}
 		return false;
 	}
 
-	private void sendPublish(String payload, int topicID, int qos){
-		if ( qos > 0 && currentOngoingQoS != null){
+	private void sendPublish(String topicName, String payload, int qos){
+		if (!isConnected) return; // Kalo koneksi tiba' terputus langsung return
+
+		int topicId = topicMap.get(topicName); // Kalo belum ada mapping, register dulu
+		if (topicId == null){
+			sendRegister(topicName);
+			return;
+		}
+		
+		if ( qos > 0 && currentOngoingQoS != null){ // Kalo pesan QoS, tetapi sudah ada yang dikirim
 			System.out.println("There's currently QoS message sent. Current message is dropped.");
 			return;
 		} 
 			
-		int messageId = (qos > 0) ? QoSCounter : 0; // qos -1, 0 (messageID = 0), qos 1,2
+		int messageId = (qos > 0) ? messageIdCounter : 0; // qos -1, 0 (messageID = 0), qos 1,2
 		MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 		
 		mqttsnPacket.setPUBLISH(false, qos, true, 0x00, topicID, messageId, payload);
 		if (qos > 0){
 			currentOngoingQoS = new PublishHelper(mqttsnPacket, System.currentTimeMillis());
-			increaseQoSCounter();
+			increaseMessageIdCounter();
 		} 
 		send(mqttsnPacket, BASESTATION_ADDR);
 	}
-
-	private void sendTemperature(int qos){
-		if (!isConnected) return;
-		if (tempTopicId == 0) {
-			handleRegister(tempTopic, tempTopicId);
-		} else {
-			sendPublish(sensor.getTemperatureValue(), tempTopicId, qos);
-			System.out.println("Publishing Temperature");
-		}
-	}
 	
-	private void sendHumidity(int qos){
-		if (!isConnected) return;
-		if (humTopicId == 0) {
-			handleRegister(humTopic, humTopicId); 
-		} else {
-			sendPublish(sensor.getHumidityValue(), humTopicId, qos);
-			System.out.println("Publishing Humidity");
-		}
-	}
-
-	private void sendAcceleration(int qos){
-		if (!isConnected) return;
-		if (accTopicId == 0) {
-			handleRegister(accTopic, accTopicId);
-		} else {
-			sendPublish(sensor.getAccelValue(), accTopicId, qos);
-			System.out.println("Publishing Acceleration");
-		}
-	}
-
-	private void sendPressure(int qos){
-		if (!isConnected)return;
-		if (airTopicId == 0) {
-			handleRegister(airTopic, airTopicId);
-		} else {
-			sendPublish(sensor.getPressureValue(), airTopicId, qos);
-			System.out.println("Publishing Air Pressure");
-		}
-	}
-	
-	private void handleRegister(String topicName, int topicId){
-		if (topicId != 0) return;
-
+	private void sendRegister(String topicName){
 		if (currentRegisterId == 0){ // Kalo belum ada paket yang sedang di daftarkan
 			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-			mqttsnPacket.setREGISTER(0, registerCounter, topicName); //topicId pasti 0, kalau di kirim Client (Node sensor) 
-			RegAckHashMap.put(registerCounter, mqttsnPacket);
-			currentRegisterId = registerCounter;
+			mqttsnPacket.setREGISTER(0, messageIdCounter, topicName); //topicId pasti 0, kalau di kirim Client (Node sensor) 
+			RegAckHashMap.put(messageIdCounter, mqttsnPacket);
+			currentRegisterId = messageIdCounter;
 
 			send(mqttsnPacket, BASESTATION_ADDR);
 			registerSentTime = System.currentTimeMillis();
-			registerCounter++;
+			increaseMessageIdCounter();
 			System.out.println("Registering: "+topicName);
 		} else{ // Kalo udah ada yang di daftar, coba cek timeout. Kalo time out, hapus dari regack map 
 			if (System.currentTimeMillis() - registerSentTime > MQTTSNPacket.REGISTER_TIMEOUT){
@@ -467,10 +407,10 @@ public class NodeSensor {
 	}
 
 	// MessageID maximum 65535 (2 byte)
-	private void increaseQoSCounter(){
-        QoSCounter++;
-        if (this.QoSCounter > 65535){
-                this.QoSCounter = 1;
+	private void increaseMessageIdCounter(){
+        messageIdCounter++;
+        if (this.messageIdCounter > 65535){
+                this.messageIdCounter = 1;
         } 
     }
 }
