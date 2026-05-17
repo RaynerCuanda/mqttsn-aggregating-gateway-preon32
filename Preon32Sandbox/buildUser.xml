@@ -23,4 +23,7 @@
 	<target name="context.set.3.ND.2">
 		<switchContext to="config/context3.properties" />
 	</target>
+	<target name="context.set.4.ND.QOS3">
+		<switchContext to="config/context4.properties" />
+	</target>
 </project>

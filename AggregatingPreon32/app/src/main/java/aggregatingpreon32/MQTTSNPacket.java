@@ -31,10 +31,10 @@ public class MQTTSNPacket {
     // public static final byte PINGRESP = 0x17;
     public static final byte DISCONNECT = 0x18;
 
-    public static final int KEEP_ALIVE_TIME = 90; // seconds * DEFAULT TIME FOR ADVERTISE, CONNECT (CHANGEABLE)
-	public static final long REGISTER_TIMEOUT = 10 * 1000; // 10s
-	public static final long PUBACK_TIMEOUT = 10 * 1000; // 10s
-	public static final int MAX_PUBACK_RETRY = 10;
+    public static final int KEEP_ALIVE_TIME = 90; // seconds
+	public static final long REGISTER_TIMEOUT = 10; // seconds
+	public static final long PUBACK_TIMEOUT = 10; // seconds
+	public static final int MAX_PUBACK_RETRY = 10; // times
 
     private static final byte flags_topicIdType_normal      = (byte) 0x00;
     private static final byte flags_topicIdType_pre         = (byte) 0x01;
@@ -88,15 +88,15 @@ public class MQTTSNPacket {
         }
     }
 
-    public void setADVERTISE(int gwId) {
+    public void setADVERTISE(int gwId, int duration) {
         int msgVariablePartLength = 1 + 2; //gwID (0), Duration (1:2)
         
         messageHeaderBuilder(msgVariablePartLength, ADVERTISE);        
         
         this.msgVariablePart = new byte[msgVariablePartLength];
         this.msgVariablePart[0] = (byte) gwId; 
-        this.msgVariablePart[1] = (byte) ((KEEP_ALIVE_TIME >> 8) & 0xFF); // High Byte (MSB)
-        this.msgVariablePart[2] = (byte) (KEEP_ALIVE_TIME & 0xFF);        // Low Byte (LSB) 
+        this.msgVariablePart[1] = (byte) ((duration >> 8) & 0xFF); // High Byte (MSB)
+        this.msgVariablePart[2] = (byte) (duration & 0xFF);        // Low Byte (LSB) 
     }
 
     public void setSEARCHGW(int radius){
@@ -108,15 +108,13 @@ public class MQTTSNPacket {
         this.msgVariablePart[0] = (byte) radius;
     }
 
-    public void setGWINFO(int gwId, String gwAddress){
-        byte[] gwAddressBytes = gwAddress.getBytes();
-        int msgVariablePartLength = 1 + gwAddressBytes.length; //GwID (0), GwAdd(1:n)
+    public void setGWINFO(int gwId){
+        int msgVariablePartLength = 1; //GwID (0)
         
         messageHeaderBuilder(msgVariablePartLength, GWINFO);
         
         this.msgVariablePart = new byte[msgVariablePartLength];
         this.msgVariablePart[0] = (byte) gwId;
-        System.arraycopy(gwAddressBytes, 0, msgVariablePart, 1, gwAddressBytes.length);   
     }
 
     public void setCONNECT(String clientID, boolean flag_cleansession, boolean flag_will, int keepAliveTime) {

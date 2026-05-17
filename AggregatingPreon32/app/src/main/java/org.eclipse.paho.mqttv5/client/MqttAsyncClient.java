@@ -1823,8 +1823,6 @@ public class MqttAsyncClient implements MqttClientInterface, IMqttAsyncClient {
 
 		this.comms.sendNoWait(rel, token);
 			
-		System.out.println("Custom PUBREL sent for Message ID: " + msgId);
-
 		return token;
 	}
 

@@ -10,4 +10,8 @@ public class MQTTSNClient {
         this.lastSeen = System.currentTimeMillis();
         this.keepAliveTime = keepAliveTime;
     }
+
+    public void updateLastSeen(){
+        this.lastSeen = System.currentTimeMillis();
+    }
 }

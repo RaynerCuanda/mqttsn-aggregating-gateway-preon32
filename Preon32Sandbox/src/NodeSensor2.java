@@ -25,21 +25,21 @@ public class NodeSensor2 {
 	private Preon32Sensor sensor;
 	
 	public static void main(String [] args ) throws Exception{
-		new NodeSensor().run();
+		new NodeSensor2().run();
 	}
 
 	public void run() throws Exception{
+		System.out.println("Starting program");
 		sensor = new Preon32Sensor();
 		sensor.init();
 		setupRadio();
-		runRadioReceiver();
 
 		while(true) {
 			sendTemperature(-1);
-			sendPressure(-1); 
-			sendAcceleration(-1);
 			sendHumidity(-1);
-			Thread.sleep(20000);
+//			sendPressure(-1); 
+//			sendAcceleration(-1);
+			Thread.sleep(5000);
 		}
 	}
 

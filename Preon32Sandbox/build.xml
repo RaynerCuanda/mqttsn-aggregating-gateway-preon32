@@ -448,8 +448,7 @@
 	        depends="cmd.module.upload, cmd.module.run"
 	        description="Upload and run module">
 	</target>
-
-
+	
 	<target name=".run"
 	        depends="init, cmd.terminal.open"
 	        description="Runs the default (autostart) app on the target system">
