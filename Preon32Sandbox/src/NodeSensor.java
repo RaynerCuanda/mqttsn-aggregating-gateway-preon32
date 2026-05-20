@@ -50,13 +50,14 @@ public class NodeSensor {
 				MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 				mqttsnPacket.setSEARCHGW(0x00); //The value 0x00 means “broadcast to all nodes in the network”. 
 				send(mqttsnPacket, BROADCAST_ADDRESS);
-				System.out.println("Broadcasting SEARCHGW");
+				printLogging("SEND to", "0", "SEARCHGW: Broadcasting to find Gateway address");
 				Thread.sleep(5000);
 			} else if (!isConnected){ // Jika address udah ada, buat koneksi dengan Gateway.
 				if(!isGatewayTimeout()){
 					MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 					mqttsnPacket.setCONNECT(NODE_SENSOR_ID, true, true, keepAliveTime);
 					send(mqttsnPacket, BASESTATION_ADDR);
+					printLogging("SEND to", ""+BASESTATION_ADDR, "CONNECT: Connecting to Gateway..");
 					System.out.println("Send CONNECT to "+(BASESTATION_ADDR & 0xFF));
 					Thread.sleep(5000);
 				}
@@ -112,7 +113,7 @@ public class NodeSensor {
 
 		switch(packet.getMsgType()){
 			case MQTTSNPacket.ADVERTISE:{
-				printLogging("RECEIVED from", ""+sender, "ADVERTISE");
+				printLogging("RECEIVED from", ""+sender, "ADVERTISE: Getting Gateway address");
 				if (BASESTATION_ADDR == 0x00){
 					BASESTATION_ADDR =  sender;
 				}
@@ -122,12 +123,12 @@ public class NodeSensor {
 				break;
 			}
 			case MQTTSNPacket.GWINFO:{
-				printLogging("RECEIVED from", ""+sender, "GWINFO");
+				printLogging("RECEIVED from", ""+sender, "GWINFO: Getting Gateway address");
 				BASESTATION_ADDR = (int)frame.getSrcAddr();
 				break;
 			}
 			case MQTTSNPacket.CONNACK:{
-				printLogging("RECEIVED from", ""+sender, "CONNACK");
+				printLogging("RECEIVED from", ""+sender, "CONNACK: Accepted, Connection Established");
 				handleCONNACK(packet);
 				break;
 			}
@@ -142,7 +143,7 @@ public class NodeSensor {
 				break;
 			}
 			case MQTTSNPacket.DISCONNECT:{
-				printLogging("RECEIVED from", ""+sender, "DISCONNECT");
+				printLogging("RECEIVED from", ""+sender, "DISCONNECT: Clearing session");
 				isConnected = false; 
 				BASESTATION_ADDR = 0x00;
 				topicMap.clear();
@@ -152,11 +153,11 @@ public class NodeSensor {
 				if (currentOngoingQoS == null) break; // Sudah di acknowledge: skip aja
 				
 				int messageId = ((packet.getMsgVarPart()[0] & 0xFF) << 8) | (packet.getMsgVarPart()[1] & 0xFF);
-				printLogging("RECEIVED from", ""+sender, "PUBREC, msgID: "+messageId);
+				printLogging("RECEIVED from", ""+sender, "PUBREC: msgID: "+messageId);
 				MQTTSNPacket res = new MQTTSNPacket();
 				res.setPUBREL(messageId);
 				send(res, BASESTATION_ADDR);
-				printLogging("SEND to", ""+BASESTATION_ADDR, "PUBREL, msgID: "+messageId);
+				printLogging("SEND to", ""+BASESTATION_ADDR, "PUBREL: msgID: "+messageId);
 
 				currentOngoingQoS.mqttsnMessage = res;
 				currentOngoingQoS.counter = 1;
@@ -170,9 +171,9 @@ public class NodeSensor {
 
 				if (pubrelId == pubcompId){
 					currentOngoingQoS = null;
-					printLogging("RECEIVED from", ""+sender, "PUBCOMP, msgID: "+pubcompId);
+					printLogging("RECEIVED from", ""+sender, "PUBCOMP: msgID: "+pubcompId);
 				} else {
-					printLogging("RECEIVED from", ""+sender, "PUBCOMP, pubcompId: "+pubcompId+", pubrelId:"+pubrelId);
+					printLogging("RECEIVED from", ""+sender, "PUBCOMP: pubcompId: "+pubcompId+", pubrelId:"+pubrelId);
 				}
 				break;
 			}
@@ -252,7 +253,7 @@ public class NodeSensor {
 		if (messageId != currentRegisterId){ // messageID yang sebelumnya udah di hapus, jadi ga usah di proses karena udah ga ada di Map.
 			return;
 		}
-		printLogging("RECEIVE from", ""+BASESTATION_ADDR, "REGACK with topic ID: "+topicId +" and message ID: "+messageId);
+		printLogging("RECEIVE from", ""+BASESTATION_ADDR, "REGACK: topic ID: "+topicId +", message ID: "+messageId);
 		int returnCode = mqttsnPacket.getMsgVarPart()[4];
 		switch (returnCode){
 			case 0x00:
@@ -289,17 +290,17 @@ public class NodeSensor {
 					break; // Pesan QoS sudah diacknowledge
 				} 
 				if (pubackId == 0) {
-					printLogging("RECEIVE from", ""+BASESTATION_ADDR, "PUBACK error, ACCEPTED Puback with messageId 0");
+					printLogging("RECEIVE from", ""+BASESTATION_ADDR, "PUBACK: Error, ACCEPTED Puback with messageId 0");
 					break;
 				}
 
 				byte[] publishVar = currentOngoingQoS.mqttsnMessage.getMsgVarPart();
 				int publishId = ((publishVar[3] & 0xFF) << 8) | (publishVar[4] & 0xFF);
 				if (pubackId == publishId){
-					printLogging("RECEIVE from", ""+BASESTATION_ADDR, "PUBACK accepted, ready for next QoS publish");
+					printLogging("RECEIVE from", ""+BASESTATION_ADDR, "PUBACK: Accepted, ready for next QoS publish");
 					currentOngoingQoS = null;
 				} else{
-					printLogging("RECEIVE from", ""+BASESTATION_ADDR, "PUBACK rejected, invalid message id");
+					printLogging("RECEIVE from", ""+BASESTATION_ADDR, "PUBACK: Rejected, invalid message id");
 				}
 				break;
 			}
@@ -385,14 +386,15 @@ public class NodeSensor {
 		
 		if (topicName.length() <= 2){
 			mqttsnPacket.setPUBLISH(false, qos, true, 0b10, topicName, messageId, payload);
+			printLogging("SEND to", ""+BASESTATION_ADDR, "PUBLIS with short topic name: "+topicName+", payload: "+payload);
 		} else {
 			mqttsnPacket.setPUBLISH(false, qos, true, 0b00, topicId, messageId, payload);
+			printLogging("SEND to", ""+BASESTATION_ADDR, "PUBLIS with normal topic name: "+topicName+", payload: "+payload);
 		}
 		if (qos > 0){
 			currentOngoingQoS = new PublishHelper(mqttsnPacket, System.currentTimeMillis());
 			increaseMessageIdCounter();
 		} 
-		printLogging("SEND to", ""+BASESTATION_ADDR, "PUBLISH, topic name: "+topicName+", payload: "+payload);
 		send(mqttsnPacket, BASESTATION_ADDR);
 	}
 
@@ -428,7 +430,7 @@ public class NodeSensor {
 
 			send(mqttsnPacket, BASESTATION_ADDR);
 			registerSentTime = System.currentTimeMillis();
-			printLogging("SEND to", ""+BASESTATION_ADDR, "REGISTER, topic name: "+topicName+", msgId: "+messageIdCounter);
+			printLogging("SEND to", ""+BASESTATION_ADDR, "REGISTER: topic name: "+topicName+", msgId: "+messageIdCounter);
 
 			increaseMessageIdCounter();
 		} else{ // Kalo udah ada yang di daftar, coba cek timeout. Kalo time out, hapus dari regack map 

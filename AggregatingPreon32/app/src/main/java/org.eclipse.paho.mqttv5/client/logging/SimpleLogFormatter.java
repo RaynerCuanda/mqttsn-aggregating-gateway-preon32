@@ -37,6 +37,7 @@ public class SimpleLogFormatter extends Formatter {
 	/**
 	 * Format the logrecord as a single line with well defined columns.
 	 */
+        @SuppressWarnings("deprecation")
 	public String format(LogRecord r) {
 		StringBuffer sb = new StringBuffer();
 		sb.append(r.getLevel().getName()).append("\t");

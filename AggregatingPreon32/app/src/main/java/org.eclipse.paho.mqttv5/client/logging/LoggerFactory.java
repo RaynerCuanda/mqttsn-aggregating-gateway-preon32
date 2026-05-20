@@ -16,16 +16,6 @@
 package org.eclipse.paho.mqttv5.client.logging;
 
 import java.lang.reflect.Method;
-
-/**
- * LoggerFactory will create a logger instance ready for use by the caller. 
- * 
- * The default is to create a logger that utilises the Java's built in 
- * logging facility java.util.logging (JSR47).  It is possible to override
- * this for systems where JSR47 is not available or an alternative logging
- * facility is needed by using setLogger and passing the the class name of 
- * a logger that implements {@link Logger}
- */
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 /**
@@ -89,6 +79,7 @@ public class LoggerFactory {
 	 * @param resourceName a name or context to associate with this logger instance.  
 	 * @return a ready for use logger
 	 */
+	@SuppressWarnings({"Deprecated", "deprecation"})
 	private static Logger getLogger(String loggerClassName, ResourceBundle messageCatalog, String loggerID, String resourceName) { //, FFDC ffdc) {
 		Logger logger  = null;
 		Class logClass = null;
@@ -131,9 +122,10 @@ public class LoggerFactory {
 		try {
 			// Hide behind reflection as java.util.logging is guaranteed to be
 			// available.
-			Class logManagerClass = Class.forName("java.util.logging.LogManager");
+			// Class logManagerClass = Class.forName("java.util.logging.LogManager");
+			Class<?> logManagerClass = Class.forName("java.util.logging.LogManager");
 			Method m1 = logManagerClass.getMethod("getLogManager", new Class[]{});
-			Object logManagerInstance = m1.invoke(null, null);
+			Object logManagerInstance = m1.invoke(null, new Object[0]);
 			Method m2 = logManagerClass.getMethod("getProperty", new Class[]{String.class});
 			result = (String)m2.invoke(logManagerInstance,new Object[]{name});
 		} catch(Exception e) {

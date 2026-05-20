@@ -251,7 +251,13 @@ public class GatewayMQTTSN {
                             waitingQoSMap.put(mqttsnPacket, wirelessNodeId);
                         }
                         sendTaskQueue.add(mqttsnPacket);
-                        printLogging("RECEIVE from", ""+wirelessNodeId, "PUBLISH, inserting to queue");
+
+                        //Hanya untuk logging
+                        int payloadLength = mqttsnPacket.getMsgHeader()[0]-7; 
+                        byte[] payloadTemp = new byte[payloadLength];
+                        System.arraycopy(mqttsnPacket.getMsgVarPart(), 5, payloadTemp, 0, payloadLength);
+                        String payload = new String(payloadTemp);
+                        printLogging("RECEIVE from", ""+wirelessNodeId, "PUBLISH, topicIdType: "+topicIdType+", topicID:"+topicId+", msgId:"+messageId+", payload:"+payload);
                     }
                 } else if (qos == 3) { // Kalo belum ada di map, suruh DISCONNECT
                     sendTaskQueue.add(mqttsnPacket);
@@ -442,7 +448,7 @@ public class GatewayMQTTSN {
                             message.setQos(0);
                             client.publish(topicName, message);
                         }
-                        printLogging("SEND to", "BROKER", "PUBLISH");
+                        printLogging("SEND to", "BROKER", "PUBLISH, topic name: "+topicName+" ,payload: "+payload);
                     } catch (Exception e){
                         System.err.println("Packet failed to process in aggregate loop: "+e);
                     }

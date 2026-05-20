@@ -18,6 +18,7 @@ package org.eclipse.paho.mqttv5.client.internal;
 /**
  * Catalog of human readable error messages.
  */
+@SuppressWarnings("deprecation")
 public abstract class MessageCatalog {
 	private static MessageCatalog INSTANCE = null;
 
