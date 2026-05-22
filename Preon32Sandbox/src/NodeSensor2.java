@@ -13,7 +13,7 @@ public class NodeSensor2 {
 	private int BASESTATION_ADDR = 0x0001; // Alamat Base station (Disii setelah dapat GWINFO)
 	private int BROADCAST_ADDRESS = 0xFFFF; //Alamat Broadcast
 
-	// Configuration for each node sensor
+	// Konfigurasi untuk setiap node sensor
 	private final int localAddress = 0x0005; // ALAMAT NODE SENSOR
 	private int tempTopicId = 1; // Temperature Predefined Id
 	private int humTopicId = 2; // Humidity Predefined Id

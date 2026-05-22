@@ -9,11 +9,11 @@ import com.virtenio.radio.ieee_802_15_4.RadioDriver;
 import com.virtenio.radio.ieee_802_15_4.RadioDriverFrameIO;
 
 public class NodeSensor {
-	private int COMMON_PANID = 0xCAFE; // Personal Area Network ID
+	private final int COMMON_PANID = 0xCAFE; // Personal Area Network ID
 	private int BASESTATION_ADDR; // Alamat Base station (Disii setelah dapat GWINFO)
-	private int BROADCAST_ADDRESS = 0xFFFF; //Alamat Broadcast
+	private final int BROADCAST_ADDRESS = 0xFFFF; //Alamat Broadcast
 
-	// Configuration for each node sensor
+	// Konfigurasi untuk setiap node sensor
 	private final int localAddress = 0x0003; // ALAMAT NODE SENSOR
 	private final String NODE_SENSOR_ID = "node_3"; // IDENTITAS NODE SENSOR
 	private final String tempTopic ="9018/Temperature";

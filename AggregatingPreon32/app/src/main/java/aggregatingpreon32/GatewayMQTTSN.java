@@ -24,8 +24,18 @@ import com.virtenio.commander.io.DataConnection;
 import com.virtenio.commander.toolsets.preon32.Preon32Helper;
 
 public class GatewayMQTTSN {
+    // Configuration for Gateway
     private int gatewayId = 0x0001;
     private String gatewayAddress = "0x0001";
+    final String clientId = "raynercuanda";
+    final String host_tcp = "tcp://localhost:1883"; 
+    final String host = "ssl://b6f0de39dbdb4fbc89413670aabed28a.s1.eu.hivemq.cloud:8883"; 
+    final String username = "admin" ;
+    final String password = "Admin123"; 
+    private final String PORT_NUMBER = "COM4";
+	private final int BROADCAST_ADDRESS = 0xFFFF; //Alamat Broadcast
+    
+    
     private ConcurrentHashMap<String, Integer> nodeSensorMap = new ConcurrentHashMap<>(); // Client ID Key, Node Sensor Physical Address (WirelessNodeId) Value
     private ConcurrentHashMap<Integer, MQTTSNClient> nodeSensorTimerMap = new ConcurrentHashMap<>(); // Client ID Key, MQTTSNClient (WirelessNodeId, keepALiveTime, lastSeen)
     private ConcurrentHashMap<Integer, String> topicMap = new ConcurrentHashMap<>(); //Topid ID  key, Topic name Value
@@ -33,39 +43,26 @@ public class GatewayMQTTSN {
     private ConcurrentHashMap<String, Integer> topicReverseMap = new ConcurrentHashMap<>(); //Topid name key, Topic ID Value
     private ConcurrentHashMap<MQTTSNPacket, Integer> waitingQoSMap = new ConcurrentHashMap<>(); // Pesan PUBLISH key, WirelessNodeId value
     private ConcurrentHashMap<Integer, Integer> globalIdMap = new ConcurrentHashMap<>(); // WirelessNodeId key, Global ID value
-    
-    BlockingQueue<MQTTSNPacket> sendTaskQueue = new LinkedBlockingQueue<>();
-
-    MqttAsyncClient client;
-    IMqttToken token;
-
+    private BlockingQueue<MQTTSNPacket> sendTaskQueue = new LinkedBlockingQueue<>();
     
     private int topicIdIncrement = 1;
-    
-    private final String PORT_NUMBER = "COM4";
-    private final int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
+    MqttAsyncClient client;
+    IMqttToken token;
     DataConnection conn;
     BufferedOutputStream out; //For sending message to Preon32
     BufferedInputStream in;
-
-    final String clientId = "raynercuanda";
-    final String host_tcp = "tcp://localhost:1883"; 
-    final String host = "ssl://b6f0de39dbdb4fbc89413670aabed28a.s1.eu.hivemq.cloud:8883"; 
-    final String username = "admin" ;
-    final String password = "Admin123"; 
-
     public static void main(String[] args) {
         new GatewayMQTTSN().run();
     }
 
     public void run() {
-        insertPredefinedMap();
-        runAggregate(); //  untuk send Publish
+        // insertPredefinedMap();
+        // runAggregate(); //  untuk send Publish
         initConnectionBroker(); // Connect ke broker
-        handleClientTimeout();
-        initIOStream(); // Menjalankan Gateway Preon32 beserta IO-nya
-        runPortReader(); // Baca port USART
-        runBroadcastConstantly(60); // Parameter: interval
+        // handleClientTimeout();
+        // initIOStream(); // Menjalankan Gateway Preon32 beserta IO-nya
+        // runPortReader(); // Baca port USART
+        // runBroadcastConstantly(60); // Parameter: interval
     }   
 
     private void insertPredefinedMap(){
@@ -192,10 +189,10 @@ public class GatewayMQTTSN {
                     nodeSensorMap.put(nodeName, wirelessNodeId);
                     nodeSensorTimerMap.put(wirelessNodeId, new MQTTSNClient(wirelessNodeId, keepAliveTime));
                     response.setCONNACK( 0x00); // Accepted
-                    printLogging("SEND to", ""+wirelessNodeId, "CONNACK, returnCode 0x00");
+                    printLogging("SEND to", ""+wirelessNodeId, "CONNACK, Connection Established with "+nodeName);
                 } else {
                     response.setCONNACK(0x01); // Rejected karena belum terhubung dengan Broker.
-                    printLogging("SEND to", ""+wirelessNodeId, "CONNACK, returnCode 0x01");
+                    printLogging("SEND to", ""+wirelessNodeId, "CONNACK, Rejected: Gateway Congestion");
                 }
                 encapsulateAndSendToNodeSensor(wirelessNodeId, response);
                 break;
@@ -321,7 +318,7 @@ public class GatewayMQTTSN {
 
     private void initConnectionBroker(){
         try {
-            client = new MqttAsyncClient(host,
+            client = new MqttAsyncClient(host_tcp,
             clientId,
             new MemoryPersistence());
 
@@ -337,34 +334,6 @@ public class GatewayMQTTSN {
             System.out.println("Failed to connect to broker.");
             e.printStackTrace();
         }
-
-        // Testing
-            // MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-        // topicMap.put(0x01, "Topic Tes");
-        // mqttsnPacket.setPUBLISH(false, 2, true, 0x00, 0x01, 10, "Success");
-        // waitingQoSMap.put(mqttsnPacket, 0x01);
-        // sendTaskQueue.add(mqttsnPacket);
-
-        // try {
-        //     MqttActionListener pubcompListener = new MqttActionListener() {
-        //         @Override
-        //         public void onSuccess(IMqttToken asyncActionToken) {
-        //             // Kalo dapet balesan PUBREC dari Broker, kirim ke Node Sensor
-        //             System.out.println("Received PUBCOMP from Broker.");
-        //         }
-                
-        //         @Override
-        //         public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-        //             System.out.println("Error sending PubRel to broker: " + exception.getMessage());
-        //         }
-        //     };
-        //     Thread.sleep(10000);
-        //     System.out.println("Sending PubRel");
-
-        //     client.sendPubRel(globalIdMap.remove(0x01), pubcompListener);
-        // } catch (Exception e) {
-        // }
-
     }
 
     private void runAggregate() {
