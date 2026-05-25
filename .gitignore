@@ -9,7 +9,6 @@ node_modules/
 ##############################
 .mtj.tmp/
 *.class
-*.jar
 *.war
 *.ear
 *.nar
