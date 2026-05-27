@@ -36,6 +36,10 @@ public class MQTTSNPacket {
 	public static final long PUBACK_TIMEOUT = 10; // seconds
 	public static final int MAX_PUBACK_RETRY = 10; // times
 
+    public static final int NORMAL_TOPIC_ID = 0b00;
+    public static final int PREDEFINED_TOPIC_ID = 0b01;
+    public static final int SHORT_TOPIC_NAME = 0b10;
+
     private static final byte flags_topicIdType_normal      = (byte) 0x00;
     private static final byte flags_topicIdType_pre         = (byte) 0x01;
     private static final byte flags_topicIdType_short       = (byte) 0x02;

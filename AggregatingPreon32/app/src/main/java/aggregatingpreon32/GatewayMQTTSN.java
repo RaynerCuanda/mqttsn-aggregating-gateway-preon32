@@ -57,7 +57,7 @@ public class GatewayMQTTSN {
 
     public void run() {
         // insertPredefinedMap();
-        // runAggregate(); //  untuk send Publish
+        runAggregate(); //  untuk send Publish
         initConnectionBroker(); // Connect ke broker
         // handleClientTimeout();
         // initIOStream(); // Menjalankan Gateway Preon32 beserta IO-nya
@@ -235,7 +235,7 @@ public class GatewayMQTTSN {
                 if (nodeSensorMap.containsValue(wirelessNodeId)){
                     int topicId = (mqttsnPacket.getMsgVarPart()[1] & 0xFF ) << 8 | (mqttsnPacket.getMsgVarPart()[2] & 0xFF);
                     
-                    String topicName =  (topicIdType == 0b00) ? topicMap.get(topicId) : predefinedTopicMap.get(topicId);
+                    String topicName =  (topicIdType == MQTTSNPacket.NORMAL_TOPIC_ID) ? topicMap.get(topicId) : predefinedTopicMap.get(topicId);
                     
                     if (topicName == null && topicIdType != 0b10){ // Kalau Tidak Ketemu mapping DAN topicIdType bukan Short Topic Name
                         printLogging("RECEIVE from", ""+wirelessNodeId, "PUBLISH, topic not found");
@@ -351,7 +351,7 @@ public class GatewayMQTTSN {
                             char second = (char) mqttsnPacket.getMsgVarPart()[2];
                             topicName = "" + first + second;
                         } else {
-                            topicName = (topicIdType == 0b00) ? topicMap.get(topicId) : predefinedTopicMap.get(topicId);
+                            topicName = (topicIdType == MQTTSNPacket.NORMAL_TOPIC_ID) ? topicMap.get(topicId) : predefinedTopicMap.get(topicId);
                         }
 
                         int messageId = ((mqttsnPacket.getMsgVarPart()[3] & 0xFF ) << 8) | (mqttsnPacket.getMsgVarPart()[4] & 0xFF);

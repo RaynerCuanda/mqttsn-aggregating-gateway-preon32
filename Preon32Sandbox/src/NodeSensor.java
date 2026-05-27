@@ -36,7 +36,8 @@ public class NodeSensor {
 	private Preon32Sensor sensor;
 	
 	public static void main(String [] args ) throws Exception{
-		new NodeSensor().run();
+		new NodeSensor().run(); // Opsi 1
+		// new NodeSensor().runVerySimpleClient(); // Opsi 2
 	}
 
 	public void run() throws Exception{
@@ -64,16 +65,34 @@ public class NodeSensor {
 			} else if (isConnected){ //Jika sudah konek, maka akan selalu sense, terus publish
 				if(!isGatewayTimeout()){
 					isQoSTimeOut();
-					sendPublish(1, sensor.getTemperatureValue(), 0);
+					sendPublish("1", MQTTSNPacket.PREDEFINED_TOPIC_ID, sensor.getTemperatureValue(), 0);
 					Thread.sleep(2000);
-					sendPublish(2, sensor.getPressureValue(), 0);
+					sendPublish("2", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getPressureValue(), 0);
 					Thread.sleep(2000);
-//					sendPublish(humTopic, sensor.getHumidityValue(), 0);
-//					Thread.sleep(2000);
-//					sendPublish(accTopic, sensor.getAccelValue(), 0);
-//					Thread.sleep(2000);
+					sendPublish(humTopic, MQTTSNPacket.NORMAL_TOPIC_ID,sensor.getHumidityValue(), 0);
+					Thread.sleep(2000);
+					sendPublish(accTopic, MQTTSNPacket.NORMAL_TOPIC_ID,sensor.getAccelValue(), 0);
+					Thread.sleep(2000);
 				}
 			} 
+		}
+	}
+
+	public void runVerySimpleClient() throws Exception{
+		BASESTATION_ADDR = 0x0001;
+		sensor = new Preon32Sensor();
+		sensor.init();
+		setupRadio();
+
+		while(true) {
+			sendPublish("1", MQTTSNPacket.PREDEFINED_TOPIC_ID, sensor.getTemperatureValue(), -1);
+			Thread.sleep(2000);
+			sendPublish("2", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getPressureValue(), -1);
+			Thread.sleep(2000);
+			sendPublish("3", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getHumidityValue(), -1);
+			Thread.sleep(2000);
+			sendPublish("4", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getAccelValue(), -1);
+			Thread.sleep(2000);
 		}
 	}
 
@@ -362,62 +381,58 @@ public class NodeSensor {
 		return false;
 	}
 
-	private void sendPublish(String topicName, String payload, int qos){
+	private void sendPublish(String topicName, int topicIdType, String payload, int qos){
 		topicName = topicName.trim();
 
-		if (!isConnected) return; // Kalo koneksi tiba' terputus langsung return
+		if (qos != -1 && !isConnected) return; // Kalo koneksi tiba' terputus langsung return
 		if (topicName.length() == 0){
 			printLogging("ERROR", "", "topicName length 0");
 			return;
 		}
-		Integer topicId = topicMap.get(topicName); // Kalo belum ada mapping, register dulu
-		if (topicId == null && topicName.length() > 2){
-			sendRegister(topicName);
-			return;
-		}
-		
+
 		if (qos > 0 && currentOngoingQoS != null){ // Kalo pesan QoS, tetapi sudah ada yang dikirim
 			printLogging("INFO", "", "Failed Publishing :" + topicName + ". There's currently ongoing QoS");
 			return;
 		} 
-			
+		
+		Integer topicId = topicMap.get(topicName); // Kalo belum ada mapping, register dulu
+		if (topicId == null && topicIdType == MQTTSNPacket.NORMAL_TOPIC_ID){
+			sendRegister(topicName);
+			return;
+		}
+
 		int messageId = (qos > 0) ? messageIdCounter : 0; // qos -1, 0 (messageID = 0), qos 1,2
 		MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 		
-		if (topicName.length() <= 2){
-			mqttsnPacket.setPUBLISH(false, qos, true, 0b10, topicName, messageId, payload);
-			printLogging("SEND to", ""+BASESTATION_ADDR, "PUBLIS with short topic name: "+topicName+", payload: "+payload);
-		} else {
-			mqttsnPacket.setPUBLISH(false, qos, true, 0b00, topicId, messageId, payload);
-			printLogging("SEND to", ""+BASESTATION_ADDR, "PUBLIS with normal topic name: "+topicName+", payload: "+payload);
+		switch (topicIdType){
+			case MQTTSNPacket.NORMAL_TOPIC_ID:{
+				mqttsnPacket.setPUBLISH(false, qos, true, MQTTSNPacket.NORMAL_TOPIC_ID, topicId, messageId, payload);
+				printLogging("SEND to", ""+BASESTATION_ADDR, "PUBLISH with normal topic name: "+topicName+", payload: "+payload+", qos: "+qos);
+				break;
+			}
+			case MQTTSNPacket.PREDEFINED_TOPIC_ID:{
+				topicId = Integer.parseInt(topicName);
+				mqttsnPacket.setPUBLISH(false, qos, true, MQTTSNPacket.PREDEFINED_TOPIC_ID, topicId, messageId, payload);
+				printLogging("SEND to", ""+BASESTATION_ADDR, "PUBLISH with pre-defined topic id: "+topicName+", payload: "+payload+", qos: "+qos);
+				break;
+			}
+			case MQTTSNPacket.SHORT_TOPIC_NAME:{
+				mqttsnPacket.setPUBLISH(false, qos, true, MQTTSNPacket.SHORT_TOPIC_NAME, topicName, messageId, payload);
+				printLogging("SEND to", ""+BASESTATION_ADDR, "PUBLISH with short topic name: "+topicName+", payload: "+payload+", qos: "+qos);
+				break;
+			}
+			default:{
+				printLogging("ERROR", "", "Invalid topic Id Type: "+topicIdType);
+				return;
+			}
 		}
+
+		//Untuk simpan QoS 
 		if (qos > 0){
 			currentOngoingQoS = new PublishHelper(mqttsnPacket, System.currentTimeMillis());
 			increaseMessageIdCounter();
 		} 
-		send(mqttsnPacket, BASESTATION_ADDR);
-	}
-
-	private void sendPublish(int predefinedTopicId, String payload, int qos) {
-		if (!isConnected) return;
-
-		if (qos > 0 && currentOngoingQoS != null) {
-			printLogging("INFO", "", "Failed publishing with predefined topic ID " + predefinedTopicId + ". There's currently ongoing QoS");
-			return;
-		}
-
-		int messageId = (qos > 0) ? messageIdCounter : 0;
-		MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
 		
-		// TopicIdType = 0b01 untuk predefined topic
-		mqttsnPacket.setPUBLISH(false, qos, true, 0b01, predefinedTopicId, messageId, payload);
-		
-		if (qos > 0) {
-			currentOngoingQoS = new PublishHelper(mqttsnPacket, System.currentTimeMillis());
-			increaseMessageIdCounter();
-		}
-		
-		printLogging("SEND to", "" + BASESTATION_ADDR, "PUBLISH with predefined topic ID: " + predefinedTopicId + ", payload: " + payload);
 		send(mqttsnPacket, BASESTATION_ADDR);
 	}
 
