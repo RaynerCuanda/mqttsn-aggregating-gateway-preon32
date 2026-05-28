@@ -31,22 +31,40 @@ var client = mqtt.connect(mqttOptions);
 
 client.on('connect', function () {
   console.log('Connection to Broker Established');
-  client.subscribe('+/+');
+  client.subscribe('#');
 });
 
 client.on('error', function (error) {
   console.log(error);
 });
 
+// Untuk penerimaan Short topic Name
+const topicMap = {
+  '7T': { roomName: '9017', payloadName: 'Temperature' },
+  '7H': { roomName: '9017', payloadName: 'Humidity' },
+  '7P': { roomName: '9017', payloadName: 'AirPressure' },
+  '7V': { roomName: '9017', payloadName: 'Vibration' },
+  '8V': { roomName: '9018', payloadName: 'Vibration' },
+  '8H': { roomName: '9018', payloadName: 'Humidity' },
+  '8P': { roomName: '9018', payloadName: 'AirPressure' },
+  '8T': { roomName: '9018', payloadName: 'Temperature' }
+};
+
 client.on('message', function (topic, message) {
-  const topicPart = topic.split('/');
-  const roomName = topicPart[0];
-  const payloadName = topicPart[1];
+  let roomName;
+  let payloadName;
+
+  if (topic.length <= 2){
+    roomName = topicMap[topic].roomName;
+    payloadName = topicMap[topic].payloadName;
+  } else {
+    const topicPart = topic.split('/');
+    roomName = topicPart[0];
+    payloadName = topicPart[1]; 
+  }
   const payloadContent = message.toString();
   ioSocket.emit('mqtt_data', { roomName: roomName, payloadName: payloadName, payloadContent: payloadContent});
   console.log({ roomName: roomName, payloadName: payloadName, payloadContent: payloadContent });
-  // console.log(topic)
-  // console.log(payload_content)
 });
 
 server.listen(8080, () => {

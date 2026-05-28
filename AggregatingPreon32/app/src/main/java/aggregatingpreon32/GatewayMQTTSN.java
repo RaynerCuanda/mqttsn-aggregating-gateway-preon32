@@ -32,7 +32,7 @@ public class GatewayMQTTSN {
     final String host = "ssl://b6f0de39dbdb4fbc89413670aabed28a.s1.eu.hivemq.cloud:8883"; 
     final String username = "admin" ;
     final String password = "Admin123"; 
-    private final String PORT_NUMBER = "COM4";
+    private final String PORT_NUMBER = "COM3";
 	private final int BROADCAST_ADDRESS = 0xFFFF; //Alamat Broadcast
     
     
@@ -56,18 +56,24 @@ public class GatewayMQTTSN {
     }
 
     public void run() {
-        // insertPredefinedMap();
+        insertPredefinedMap();
         runAggregate(); //  untuk send Publish
         initConnectionBroker(); // Connect ke broker
-        // handleClientTimeout();
-        // initIOStream(); // Menjalankan Gateway Preon32 beserta IO-nya
-        // runPortReader(); // Baca port USART
-        // runBroadcastConstantly(60); // Parameter: interval
+        handleClientTimeout();
+        initIOStream(); // Menjalankan Gateway Preon32 beserta IO-nya
+        runPortReader(); // Baca port USART
+        runBroadcastConstantly(60); // Parameter: interval
     }   
 
     private void insertPredefinedMap(){
-        predefinedTopicMap.put(1, "9019/Temperature");
-        predefinedTopicMap.put(2, "9019/Humidity");
+        predefinedTopicMap.put(1, "9017/Temperature");
+        predefinedTopicMap.put(2, "9017/Humidity");
+        predefinedTopicMap.put(3, "9017/AirPressure");
+        predefinedTopicMap.put(4, "9017/Vibration");
+        predefinedTopicMap.put(5, "9018/Temperature");
+        predefinedTopicMap.put(6, "9018/Humidity");
+        predefinedTopicMap.put(7, "9018/AirPressure");
+        predefinedTopicMap.put(8, "9018/Vibration");
     }
 
     private void initIOStream() {
@@ -248,13 +254,6 @@ public class GatewayMQTTSN {
                             waitingQoSMap.put(mqttsnPacket, wirelessNodeId);
                         }
                         sendTaskQueue.add(mqttsnPacket);
-
-                        //Hanya untuk logging
-                        int payloadLength = mqttsnPacket.getMsgHeader()[0]-7; 
-                        byte[] payloadTemp = new byte[payloadLength];
-                        System.arraycopy(mqttsnPacket.getMsgVarPart(), 5, payloadTemp, 0, payloadLength);
-                        String payload = new String(payloadTemp);
-                        printLogging("RECEIVE from", ""+wirelessNodeId, "PUBLISH, topicIdType: "+topicIdType+", topicID:"+topicId+", msgId:"+messageId+", payload:"+payload);
                     }
                 } else if (qos == 3) { // Kalo belum ada di map, suruh DISCONNECT
                     sendTaskQueue.add(mqttsnPacket);
@@ -268,16 +267,14 @@ public class GatewayMQTTSN {
             case MQTTSNPacket.PUBREL:{
                 try {
                     int messageId = (mqttsnPacket.getMsgVarPart()[0] & 0xFF) << 8 | mqttsnPacket.getMsgVarPart()[1] & 0xFF;
-                    printLogging("RECEIVE from", ""+wirelessNodeId, "PUBREL");
                     MqttActionListener pubcompListener = new MqttActionListener() {
                         @Override
                         public void onSuccess(IMqttToken asyncActionToken) {
                             // Kalo berhasil kirim PUBREL ke BROKER dan dapet balesan PUBCOMP dari Broker, kirim ke Node Sensor
-                            printLogging("RECEIVE from", "Broker", "PUBCOMP");
                             MQTTSNPacket pubcompPacket = new MQTTSNPacket();
                             pubcompPacket.setPUBCOMP(messageId);
                             encapsulateAndSendToNodeSensor(wirelessNodeId, pubcompPacket);
-                            printLogging("SEND to", ""+wirelessNodeId, "PUBCOMP");
+                            printLogging("RECEIVE from", "Broker", "PUBCOMP, [SEND to: "+wirelessNodeId+" ] PUBCOMP");
                         }
                         
                         @Override
@@ -288,7 +285,7 @@ public class GatewayMQTTSN {
                     };
                     if (globalIdMap.get(wirelessNodeId) != null){
                         client.sendPubRel(globalIdMap.remove(wirelessNodeId), pubcompListener);
-                        printLogging("SEND to", "BROKER", "PUBREL");
+                        printLogging("RECEIVE from", ""+wirelessNodeId, "PUBREL, [SEND to: BROKER] PUBREL");
 
                     } else{
                         System.out.println("No mapping for Global ID message.");
@@ -318,7 +315,7 @@ public class GatewayMQTTSN {
 
     private void initConnectionBroker(){
         try {
-            client = new MqttAsyncClient(host_tcp,
+            client = new MqttAsyncClient(host,
             clientId,
             new MemoryPersistence());
 
@@ -375,8 +372,7 @@ public class GatewayMQTTSN {
                                     pubackPacket.setPUBACK(topicId, messageId, 0x00);
                                     int wirelessNodeId = waitingQoSMap.remove(mqttsnPacket);
                                     encapsulateAndSendToNodeSensor(wirelessNodeId, pubackPacket);
-                                    printLogging("RECEIVE from", "Broker", "PUBACK");
-                                    printLogging("SEND to", ""+wirelessNodeId, "PUBACK");
+                                    printLogging("RECEIVE from", "Broker", "PUBACK, [SEND to: "+wirelessNodeId+" ] PUBACK");
                                 }
                                 
                                 @Override
@@ -397,8 +393,7 @@ public class GatewayMQTTSN {
                                     pubrecPacket.setPUBREC(messageId);
                                     int wirelessNodeId = waitingQoSMap.remove(mqttsnPacket);
                                     encapsulateAndSendToNodeSensor(wirelessNodeId, pubrecPacket);
-                                    printLogging("RECEIVE from", "Broker", "PUBREC");
-                                    printLogging("SEND to", ""+wirelessNodeId, "PUBREC");
+                                    printLogging("RECEIVE from", "Broker", "PUBREC, [SEND to: "+wirelessNodeId+" ] PUBREC");
                                 }
                                 
                                 @Override

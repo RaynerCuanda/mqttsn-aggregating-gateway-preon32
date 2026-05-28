@@ -11,12 +11,12 @@ import com.virtenio.driver.spi.NativeSPI;
 
 public class Preon32Sensor {
 
-    private ADXL345 accelerationSensor;
+    private ADXL345 vibrationSensor;
     private SHT21 humiditySensor;
     private MPL115A2 pressureSensor;
     private ADT7410 temperatureSensor;
     
-    private short[] accelValue = new short[3];
+    private short[] vibrationValue = new short[3];
     private float humidityValue;
     private float pressureValue;
     private float temperatureValue;
@@ -39,17 +39,14 @@ public class Preon32Sensor {
             humiditySensor.open();
             humiditySensor.setResolution(SHT21.RESOLUTION_RH12_T14);
 
-            accelerationSensor = new ADXL345(spi, chipSelectPin);
-            accelerationSensor.open();
-            accelerationSensor.setDataFormat(ADXL345.DATA_FORMAT_RANGE_2G);
-            accelerationSensor.setDataRate(ADXL345.DATA_RATE_3200HZ);
-            accelerationSensor.setPowerControl(ADXL345.POWER_CONTROL_MEASURE);
+            vibrationSensor = new ADXL345(spi, chipSelectPin);
+            vibrationSensor.open();
+            vibrationSensor.setDataFormat(ADXL345.DATA_FORMAT_RANGE_2G);
+            vibrationSensor.setDataRate(ADXL345.DATA_RATE_3200HZ);
+            vibrationSensor.setPowerControl(ADXL345.POWER_CONTROL_MEASURE);
 
             pressureSensor = new MPL115A2(i2c, resetPin, shutDownPin);
-            // pressureSensor = new MPL115A2(i2c, null, null); // Mungkin bisa seperti Temperature?
             pressureSensor.open();
-            // pressureSensor.setReset(false);
-            // pressureSensor.setShutdown(false);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -61,9 +58,9 @@ public class Preon32Sensor {
         return ""+(Math.round(temperatureValue * 100.0) / 100.0);
     }
 
-    public String getAccelValue() {
-        senseAcceleration();
-        return this.accelValue[0]+","+this.accelValue[1]+","+this.accelValue[2];
+    public String getVibrationValue() {
+        senseVibration();
+        return this.vibrationValue[0]+","+this.vibrationValue[1]+","+this.vibrationValue[2];
     }
 
     public String getPressureValue() {
@@ -84,9 +81,9 @@ public class Preon32Sensor {
         }
     }
 
-    private void senseAcceleration() {
+    private void senseVibration() {
         try {
-            accelerationSensor.getValuesRaw(accelValue, 0);
+            vibrationSensor.getValuesRaw(vibrationValue, 0);
         } catch (Exception e) {
             e.printStackTrace();
         }
