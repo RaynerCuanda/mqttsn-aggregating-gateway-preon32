@@ -14,17 +14,22 @@ public class NodeSensor {
 	private final int BROADCAST_ADDRESS = 0xFFFF; //Alamat Broadcast
 
 	// Konfigurasi untuk setiap node sensor
-	private final int localAddress = 0x0002; // ALAMAT NODE SENSOR
-	private final String NODE_SENSOR_ID = "node_2"; // IDENTITAS NODE SENSOR
-	private final String tempTopic ="9017/Temperature";
-	private final String humTopic = "9017/Humidity";
-	private final String airTopic = "9017/AirPressure";
-	private final String accTopic = "9017/Vibration";
+	private int nodeNumber = 3; // 1 digunakan untuk alamat Gateway
+	private int tipeTopic = MQTTSNPacket.PREDEFINED_TOPIC_ID;
+	private String tempTopic ="5"; // 9017/Temperature
+	private String airTopic = "6"; // 9017/AirPressure
+	private String humTopic = "7"; // 9017/Humidity
+	private String vibTopic = "8"; // 9017/Vibration
+	private int publish_qos = 2;
+	
+	private final int localAddress = 0x0000 + nodeNumber; // ALAMAT NODE SENSOR
+	private final String NODE_SENSOR_ID = "node_"+nodeNumber; // IDENTITAS NODE SENSOR
 	 
 	private int keepAliveTime = MQTTSNPacket.KEEP_ALIVE_TIME; 
 	private boolean isConnected; // is connected to Gateway
 	private long gwLastReceive; // Last time receiving message from Gateway
 	private long registerSentTime; 
+	private int counter = 0;
 	private int currentRegisterId = 0; // ongoing Register Id
 	private int messageIdCounter = 1; // Register Id counter
 	private HashMap<Integer, MQTTSNPacket> RegAckHashMap = new HashMap<>(); //
@@ -35,9 +40,10 @@ public class NodeSensor {
 	private FrameIO fio;
 	private Preon32Sensor sensor;
 	
+	
 	public static void main(String [] args ) throws Exception{
 		new NodeSensor().run(); // Opsi Normal Client
-//		 new NodeSensor().runVerySimpleClient(); // Opsi Very Simple Client (QoS -1)
+		//  new NodeSensor().runVerySimpleClient(); // Opsi Very Simple Client (QoS -1)
 	}
 
 	public void run() throws Exception{
@@ -59,19 +65,20 @@ public class NodeSensor {
 					mqttsnPacket.setCONNECT(NODE_SENSOR_ID, true, true, keepAliveTime);
 					send(mqttsnPacket, BASESTATION_ADDR);
 					printLogging("SEND to", ""+BASESTATION_ADDR, "CONNECT: Connecting to Gateway..");
-					System.out.println("Send CONNECT to "+(BASESTATION_ADDR & 0xFF));
 					Thread.sleep(5000);
 				}
 			} else if (isConnected){ //Jika sudah konek, maka akan selalu sense, terus publish
 				if(!isGatewayTimeout()){
 					isQoSTimeOut();
-					sendPublish("1", MQTTSNPacket.PREDEFINED_TOPIC_ID, sensor.getTemperatureValue(), 0);
-					Thread.sleep(1000);
-					sendPublish("2", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getPressureValue(), 0);
-					Thread.sleep(1000);
-					sendPublish("3", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getHumidityValue(), 0);
-					Thread.sleep(1000);
-					sendPublish("4", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getVibrationValue(), 0);
+					System.out.println("Batch number-:"+counter);
+					counter++;
+					sendPublish(tempTopic, tipeTopic, sensor.getTemperatureValue(), publish_qos);
+					Thread.sleep(3000);
+					sendPublish(airTopic, tipeTopic, sensor.getPressureValue(), publish_qos);
+					Thread.sleep(3000);
+					sendPublish(humTopic, tipeTopic, sensor.getHumidityValue(), publish_qos);
+					Thread.sleep(3000);
+					sendPublish(vibTopic, tipeTopic, sensor.getVibrationValue(), publish_qos);
 					Thread.sleep(30000);
 				}
 			} 
@@ -83,16 +90,21 @@ public class NodeSensor {
 		sensor = new Preon32Sensor();
 		sensor.init();
 		setupRadio();
-
 		while(true) {
-			sendPublish("5", MQTTSNPacket.PREDEFINED_TOPIC_ID, sensor.getTemperatureValue(), -1);
-			Thread.sleep(500);
-			sendPublish("6", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getHumidityValue(), -1);
-			Thread.sleep(500);
-			sendPublish("7", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getPressureValue(), -1);
-			Thread.sleep(500);
-			sendPublish("8", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getVibrationValue(), -1);
-			Thread.sleep(20000);
+			
+			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
+			mqttsnPacket.setCONNECT(NODE_SENSOR_ID, true, true, keepAliveTime);
+			send(mqttsnPacket, BASESTATION_ADDR);
+			printLogging("SEND to", ""+BASESTATION_ADDR, "CONNECT: Connecting to Gateway..");
+
+//			sendPublish("5", MQTTSNPacket.PREDEFINED_TOPIC_ID, sensor.getTemperatureValue(), publish_qos);
+//			Thread.sleep(500);
+//			sendPublish("6", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getHumidityValue(), publish_qos);
+//			Thread.sleep(500);
+//			sendPublish("7", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getPressureValue(), publish_qos);
+//			Thread.sleep(500);
+//			sendPublish("8", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getVibrationValue(), publish_qos);
+			Thread.sleep(30000);
 		}
 	}
 
@@ -185,6 +197,7 @@ public class NodeSensor {
 			}
 			case MQTTSNPacket.PUBCOMP:{
 				int pubcompId = ((packet.getMsgVarPart()[0] & 0xFF) << 8) | (packet.getMsgVarPart()[1] & 0xFF);
+				
 				MQTTSNPacket pubrel = currentOngoingQoS.mqttsnMessage;
 				int pubrelId =  ((pubrel.getMsgVarPart()[0] & 0xFF) << 8) | (pubrel.getMsgVarPart()[1] & 0xFF);
 

@@ -25,18 +25,20 @@ import com.virtenio.commander.toolsets.preon32.Preon32Helper;
 
 public class GatewayMQTTSN {
     // Configuration for Gateway
-    private int gatewayId = 0x0001;
-    private String gatewayAddress = "0x0001";
-    final String clientId = "raynercuanda";
-    final String host_tcp = "tcp://localhost:1883"; 
-    final String host = "ssl://b6f0de39dbdb4fbc89413670aabed28a.s1.eu.hivemq.cloud:8883"; 
-    final String username = "admin" ;
-    final String password = "Admin123"; 
-    private final String PORT_NUMBER = "COM3";
+    private final String PORT_NUMBER = "COM4";
 	private final int BROADCAST_ADDRESS = 0xFFFF; //Alamat Broadcast
+    private final int gatewayId = 0x0001; // 
+    private String gatewayAddress = "0x0001"; // Alamat Forwarder
+
+    // Broker Connection Settings
+    private final String clientId = "raynercuanda";
+    private final String host_tcp = "tcp://localhost:1883"; 
+    private final String host = "ssl://b6f0de39dbdb4fbc89413670aabed28a.s1.eu.hivemq.cloud:8883"; 
+    private final String username = "admin" ;
+    private final String password = "Admin123"; 
     
     
-    private ConcurrentHashMap<String, Integer> nodeSensorMap = new ConcurrentHashMap<>(); // Client ID Key, Node Sensor Physical Address (WirelessNodeId) Value
+    private ConcurrentHashMap<String, Integer> nodeSensorMap = new ConcurrentHashMap<>(); // Client ID Key, WirelessNodeId Value
     private ConcurrentHashMap<Integer, MQTTSNClient> nodeSensorTimerMap = new ConcurrentHashMap<>(); // Client ID Key, MQTTSNClient (WirelessNodeId, keepALiveTime, lastSeen)
     private ConcurrentHashMap<Integer, String> topicMap = new ConcurrentHashMap<>(); //Topid ID  key, Topic name Value
     private ConcurrentHashMap<Integer, String> predefinedTopicMap = new ConcurrentHashMap<>(); //Topid ID  key, Topic name Value
@@ -83,15 +85,16 @@ public class GatewayMQTTSN {
             conn = nodeHelper.runModule("ForwarderMQTTSN");
             out = new BufferedOutputStream(conn.getOutputStream());
             in = new BufferedInputStream(conn.getInputStream());
-            System.out.println("IO Stream initialized");
+            System.out.println("IO Connection with Forwarder initialized");
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void encapsulateAndSendToNodeSensor(int wirelessNodeId, MQTTSNPacket packet){
+    private void encapsulateAndSendToNodeSensor(int wirelessNodeId, MQTTSNPacket packet){        
         byte[] packetToSend = MQTTSNPacket.toEncapsulatedMessage(wirelessNodeId, packet.toBytes());
         sendToForwarder(packetToSend);
+        // System.out.println("Encapsulating CONNACK: "+Arrays.toString(packetToSend)+", and send to Forwarder");
     }
 
     private void sendToForwarder(byte[] EncapsulatedMessage){
@@ -157,7 +160,13 @@ public class GatewayMQTTSN {
 
     private void handleEncapsulated(byte[] encapsulatedMessage){
         int lenNotMQTTSN = (int) (encapsulatedMessage[0] & 0xFF); // Panjang pesan diluar MQTT-SN
+        int mqttsnLength = (int) (encapsulatedMessage[lenNotMQTTSN] & 0xFF); // Panjang pesan MQTT-SN
         
+        //Testing
+        // byte[] cleanEncapsulated = new byte[lenNotMQTTSN+mqttsnLength];
+        // System.arraycopy(encapsulatedMessage, 0, cleanEncapsulated , 0, cleanEncapsulated.length);
+        // System.out.println("Received Encapsulated Message (Decimal): "+Arrays.toString(cleanEncapsulated));
+
         byte[] wirelessNodeIdTemp = new byte[lenNotMQTTSN - 3]; // Di kurangi length, msgType, ctrl
         System.arraycopy(encapsulatedMessage, 3, wirelessNodeIdTemp, 0, lenNotMQTTSN-3);   
 
@@ -166,9 +175,12 @@ public class GatewayMQTTSN {
             return;
         } 
         int wirelessNodeId = ((wirelessNodeIdTemp[0] & 0xFF ) << 8) | (wirelessNodeIdTemp[1] & 0xFF);
-        byte[] mqttsnPacketByte = new byte[encapsulatedMessage.length - lenNotMQTTSN];
-        System.arraycopy(encapsulatedMessage, lenNotMQTTSN, mqttsnPacketByte, 0, encapsulatedMessage.length-lenNotMQTTSN);   
-
+        byte[] mqttsnPacketByte = new byte[mqttsnLength];
+        System.arraycopy(encapsulatedMessage, lenNotMQTTSN, mqttsnPacketByte, 0, mqttsnLength);   
+        
+        //Testing
+        // System.out.println("Decapsulate..\nMQTTSNPacket (Decimal): "+Arrays.toString(mqttsnPacketByte)+"\nWireless Node Id (Source): "+wirelessNodeId);
+        
         MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
         mqttsnPacket.toMQTTSN(mqttsnPacketByte);
 
@@ -185,17 +197,27 @@ public class GatewayMQTTSN {
             }
             case MQTTSNPacket.CONNECT:{
                 printLogging("Receive from", ""+wirelessNodeId, "CONNECT");
-                int nodeLength = mqttsnPacket.getMsgHeader()[0]-6;
-                byte[] tempName = new byte[nodeLength];
-                System.arraycopy(mqttsnPacket.getMsgVarPart(), 4, tempName, 0, nodeLength);
-                String nodeName = new String(tempName);
-                
+
                 if (client.isConnected()){
+                    int nodeLength = mqttsnPacket.getMsgHeader()[0]-6;
+                    byte[] tempName = new byte[nodeLength];
+                    System.arraycopy(mqttsnPacket.getMsgVarPart(), 4, tempName, 0, nodeLength);
+                    String nodeName = new String(tempName);
                     int keepAliveTime = ((mqttsnPacket.getMsgVarPart()[2] & 0xFF ) << 8) | (mqttsnPacket.getMsgVarPart()[3] & 0xFF);
+                
+                    // Testing
+                    // System.out.println("Length:"+mqttsnLength);
+                    // System.out.println("MsgType: CONNECT");
+                    // System.out.println("Keep Alive Time:"+keepAliveTime);
+                    // System.out.println("Node name:"+nodeName);
+                    
                     nodeSensorMap.put(nodeName, wirelessNodeId);
                     nodeSensorTimerMap.put(wirelessNodeId, new MQTTSNClient(wirelessNodeId, keepAliveTime));
                     response.setCONNACK( 0x00); // Accepted
                     printLogging("SEND to", ""+wirelessNodeId, "CONNACK, Connection Established with "+nodeName);
+
+                    //Testing
+                    // System.out.println("Sending CONNACK (Decimal): "+ Arrays.toString(response.toBytes()));
                 } else {
                     response.setCONNACK(0x01); // Rejected karena belum terhubung dengan Broker.
                     printLogging("SEND to", ""+wirelessNodeId, "CONNACK, Rejected: Gateway Congestion");
@@ -283,6 +305,7 @@ public class GatewayMQTTSN {
                             System.out.println("Error sending PubRel to broker: " + exception.getMessage());
                         }
                     };
+
                     if (globalIdMap.get(wirelessNodeId) != null){
                         client.sendPubRel(globalIdMap.remove(wirelessNodeId), pubcompListener);
                         printLogging("RECEIVE from", ""+wirelessNodeId, "PUBREL, [SEND to: BROKER] PUBREL");

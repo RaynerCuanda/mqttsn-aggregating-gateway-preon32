@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 export default function MyPayload({ payloadImageSrc, payloadName, payloadContent, payloadUnit, lastReceive }) {  
   const [timeText, setTimeText] = useState("Node Sensor is off");
-
+  const [receiveCount, setReceiveCount] = useState(0);
   useEffect(() => {
     if (!lastReceive || isNaN(lastReceive)) return;
 
@@ -19,6 +19,14 @@ export default function MyPayload({ payloadImageSrc, payloadName, payloadContent
     
   }, [lastReceive]);
   
+
+  useEffect(() => {
+    // Prevent counting if the sensor is off or the data is invalid on first render
+    if (lastReceive && !isNaN(lastReceive)) {
+      setReceiveCount(prevCount => prevCount + 1);
+    }
+  }, [lastReceive]);
+
   return (
     <div className='payload-card-box'>
         <img src={payloadImageSrc} className='payload-image'/>
@@ -29,6 +37,7 @@ export default function MyPayload({ payloadImageSrc, payloadName, payloadContent
             <div className='payload-unit'>{payloadUnit}</div>
             <div className='time'>{timeText}</div>
           </div>
+            <div className='counter'>Counter: {receiveCount}</div>
         </div>
       </div>
   );
