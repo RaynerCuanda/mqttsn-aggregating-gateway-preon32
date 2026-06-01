@@ -39,10 +39,10 @@ public class GatewayMQTTSN {
     
     
     private ConcurrentHashMap<String, Integer> nodeSensorMap = new ConcurrentHashMap<>(); // Client ID Key, WirelessNodeId Value
-    private ConcurrentHashMap<Integer, MQTTSNClient> nodeSensorTimerMap = new ConcurrentHashMap<>(); // Client ID Key, MQTTSNClient (WirelessNodeId, keepALiveTime, lastSeen)
+    private ConcurrentHashMap<Integer, ClientSession> clientSessionMap = new ConcurrentHashMap<>(); // Client ID Key, MQTTSNClient (WirelessNodeId, keepALiveTime, lastSeen)
     private ConcurrentHashMap<Integer, String> topicMap = new ConcurrentHashMap<>(); //Topid ID  key, Topic name Value
-    private ConcurrentHashMap<Integer, String> predefinedTopicMap = new ConcurrentHashMap<>(); //Topid ID  key, Topic name Value
     private ConcurrentHashMap<String, Integer> topicReverseMap = new ConcurrentHashMap<>(); //Topid name key, Topic ID Value
+    private ConcurrentHashMap<Integer, String> predefinedTopicMap = new ConcurrentHashMap<>(); //Topid ID  key, Topic name Value
     private ConcurrentHashMap<MQTTSNPacket, Integer> waitingQoSMap = new ConcurrentHashMap<>(); // Pesan PUBLISH key, WirelessNodeId value
     private ConcurrentHashMap<Integer, Integer> globalIdMap = new ConcurrentHashMap<>(); // WirelessNodeId key, Global ID value
     private BlockingQueue<MQTTSNPacket> sendTaskQueue = new LinkedBlockingQueue<>();
@@ -135,17 +135,17 @@ public class GatewayMQTTSN {
             public void run() {
                 while (true) {
                     try {
-                        Iterator<Integer> mapIterator = nodeSensorTimerMap.keySet().iterator();
+                        Iterator<Integer> mapIterator = clientSessionMap.keySet().iterator();
     
                         while(mapIterator.hasNext()){
                             Integer wirelessNodeId = mapIterator.next();
-                            MQTTSNClient client = nodeSensorTimerMap.get(wirelessNodeId);
+                            ClientSession client = clientSessionMap.get(wirelessNodeId);
                             
                             long idleTime = (System.currentTimeMillis() - client.lastSeen) / 1000;
                             if (idleTime > client.keepAliveTime){
                                 printLogging("INFO", "", "Client Timeout for client id "+wirelessNodeId+": idle for "+idleTime);
                                 nodeSensorMap.values().remove(wirelessNodeId);
-                                nodeSensorTimerMap.remove(wirelessNodeId);
+                                clientSessionMap.remove(wirelessNodeId);
                                 System.out.println("Client Timeout: Removed Client with id: "+ wirelessNodeId);
                             } else{
                             }
@@ -212,7 +212,7 @@ public class GatewayMQTTSN {
                     // System.out.println("Node name:"+nodeName);
                     
                     nodeSensorMap.put(nodeName, wirelessNodeId);
-                    nodeSensorTimerMap.put(wirelessNodeId, new MQTTSNClient(wirelessNodeId, keepAliveTime));
+                    clientSessionMap.put(wirelessNodeId, new ClientSession(wirelessNodeId, keepAliveTime));
                     response.setCONNACK( 0x00); // Accepted
                     printLogging("SEND to", ""+wirelessNodeId, "CONNACK, Connection Established with "+nodeName);
 
@@ -330,7 +330,7 @@ public class GatewayMQTTSN {
     }
 
     private void updateNodeSensorTimer(int wirelessNodeId){
-        MQTTSNClient client = nodeSensorTimerMap.get(wirelessNodeId); 
+        ClientSession client = clientSessionMap.get(wirelessNodeId); 
         if (client != null){
             client.updateLastSeen();
         }
