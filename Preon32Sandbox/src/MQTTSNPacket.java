@@ -112,18 +112,18 @@ public class MQTTSNPacket {
         this.msgVariablePart[0] = (byte) gwId;
     }
 
-    public void setCONNECT(String clientID, boolean flag_cleansession, boolean flag_will, int keepAliveTime) {
+    public void setCONNECT(String clientID, boolean cleanSession, boolean will, int keepAliveTime) {
         byte[] clientIdBytes = clientID.getBytes();
         int msgVariablePartLength = 1 + 1 + 2 + clientIdBytes.length; //Flags (0), Protocol ID (1), Duration (2 & 3), ClientID (4:n)
         
         messageHeaderBuilder(msgVariablePartLength, CONNECT);        
         
         byte flags = (byte) 0x00;
-        if (flag_will){
+        if (will){
             flags |= flags_will;
         }
         
-        if (flag_cleansession){
+        if (cleanSession){
             flags |= flags_cleanSession;
         } 
         
@@ -289,7 +289,7 @@ public class MQTTSNPacket {
     public static byte[] toEncapsulatedMessage(int wirelessNodeId, byte[] MQTTSNMessage){
         int length = 1 + 1 + 1 + 2; // Panjang pesan Enkapsulasi sampai WirelessNdoeID (Sesuai spesifikasi)
         byte msgType = ENCAPSULATED_MESSAGE;
-        byte ctrl = 0x00; // !TO DO: What is this..
+        byte ctrl = 0x00; //
         
         int totalLength = length + MQTTSNMessage.length;
         byte[] EncapsulatedMessage = new byte[totalLength];
