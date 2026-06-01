@@ -1,4 +1,3 @@
-import java.io.IOException;
 import java.io.OutputStream;
 
 import com.virtenio.driver.device.at86rf231.AT86RF231;
@@ -20,11 +19,8 @@ public class ForwarderMQTTSN{
     private FrameIO fio;
     private AT86RF231 radio;
 
-	// private final int COMMON_CHANNEL = 24; // channel
 	private  int COMMON_PANID = 0xCAFE; // Personal Area Network ID
-	// private  String NODE_SENSOR_ID = "gateway"; // IDENTITAS NODE SENSOR
 	private  int LOCAL_ADDRESS = 0x0001; // ALAMAT GATEWAY;
-	//  private int BROADCAST_ADDRESS = 0xFFFF; //ALAMAT UNTUK BROADCAST
 
 	public static void main(String [] args ) throws Exception
 	{
@@ -144,7 +140,7 @@ public class ForwarderMQTTSN{
 
         try {
             fio.transmit(testFrame);
-        } catch (IOException e) {
+        } catch (Exception e) {
             // e.printStackTrace();
         }
 	}

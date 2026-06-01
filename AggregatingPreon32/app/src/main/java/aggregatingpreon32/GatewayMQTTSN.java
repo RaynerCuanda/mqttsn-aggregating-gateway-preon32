@@ -69,12 +69,12 @@ public class GatewayMQTTSN {
 
     private void insertPredefinedMap(){
         predefinedTopicMap.put(1, "9017/Temperature");
-        predefinedTopicMap.put(2, "9017/Humidity");
-        predefinedTopicMap.put(3, "9017/AirPressure");
+        predefinedTopicMap.put(2, "9017/AirPressure");
+        predefinedTopicMap.put(3, "9017/Humidity");
         predefinedTopicMap.put(4, "9017/Vibration");
         predefinedTopicMap.put(5, "9018/Temperature");
-        predefinedTopicMap.put(6, "9018/Humidity");
-        predefinedTopicMap.put(7, "9018/AirPressure");
+        predefinedTopicMap.put(6, "9018/AirPressure");
+        predefinedTopicMap.put(7, "9018/Humidity");
         predefinedTopicMap.put(8, "9018/Vibration");
     }
 

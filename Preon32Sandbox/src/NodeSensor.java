@@ -28,7 +28,7 @@ public class NodeSensor {
 	private int keepAliveTime = MQTTSNPacket.KEEP_ALIVE_TIME; 
 	private boolean isConnected; // is connected to Gateway
 	private long gwLastReceive; // Last time receiving message from Gateway
-	private long registerSentTime; 
+	private long registerSentTime;
 	private int counter = 0;
 	private int currentRegisterId = 0; // ongoing Register Id
 	private int messageIdCounter = 1; // Register Id counter
@@ -42,11 +42,18 @@ public class NodeSensor {
 	
 	
 	public static void main(String [] args ) throws Exception{
-		new NodeSensor().run(); // Opsi Normal Client
-		//  new NodeSensor().runVerySimpleClient(); // Opsi Very Simple Client (QoS -1)
+		new NodeSensor().run(true); // true jika ingin menjalankan rormal Client (QoS 0, 1, 2). False untuk very simple client (-1)
 	}
 
-	public void run() throws Exception{
+	public void run(boolean isNormalClient) throws Exception{
+		if (isVerySimple){
+			runNormalClient();
+		} else{
+			runVerySimpleClient();
+		}
+	}
+
+	public void runNormalClient(){
 		sensor = new Preon32Sensor();
 		sensor.init();
 		setupRadio();
@@ -90,20 +97,16 @@ public class NodeSensor {
 		sensor = new Preon32Sensor();
 		sensor.init();
 		setupRadio();
+		
+		publish_qos = -1;
 		while(true) {
-			
-			MQTTSNPacket mqttsnPacket = new MQTTSNPacket();
-			mqttsnPacket.setCONNECT(NODE_SENSOR_ID, true, true, keepAliveTime);
-			send(mqttsnPacket, BASESTATION_ADDR);
-			printLogging("SEND to", ""+BASESTATION_ADDR, "CONNECT: Connecting to Gateway..");
-
-//			sendPublish("5", MQTTSNPacket.PREDEFINED_TOPIC_ID, sensor.getTemperatureValue(), publish_qos);
-//			Thread.sleep(500);
-//			sendPublish("6", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getHumidityValue(), publish_qos);
-//			Thread.sleep(500);
-//			sendPublish("7", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getPressureValue(), publish_qos);
-//			Thread.sleep(500);
-//			sendPublish("8", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getVibrationValue(), publish_qos);
+			sendPublish("5", MQTTSNPacket.PREDEFINED_TOPIC_ID, sensor.getTemperatureValue(), publish_qos);
+			Thread.sleep(500);
+			sendPublish("6", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getHumidityValue(), publish_qos);
+			Thread.sleep(500);
+			sendPublish("7", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getPressureValue(), publish_qos);
+			Thread.sleep(500);
+			sendPublish("8", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getVibrationValue(), publish_qos);
 			Thread.sleep(30000);
 		}
 	}
