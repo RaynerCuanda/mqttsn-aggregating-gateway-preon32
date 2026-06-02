@@ -14,13 +14,13 @@ public class MQTTSNClient {
 	private final int BROADCAST_ADDRESS = 0xFFFF; //Alamat Broadcast
 
 	// Konfigurasi untuk setiap node sensor
-	private int nodeNumber = 3; // 1 digunakan untuk alamat Gateway
+	private int nodeNumber = 3; // nomor dari node sensor (untuk alamat dan identitas)
 	private int topicType = MQTTSNPacket.PREDEFINED_TOPIC_ID;
-	private String tempTopic ="5"; // 9017/Temperature
-	private String airTopic = "6"; // 9017/AirPressure
-	private String humTopic = "7"; // 9017/Humidity
-	private String vibTopic = "8"; // 9017/Vibration
-	private int publish_qos = 2;
+	private String tempTopic ="9017/Temperature"; // 9017/Temperature
+	private String airTopic = "9017/AirPressure"; // 9017/AirPressure
+	private String humTopic = "7H"; // 9017/Humidity
+	private String vibTopic = "7V"; // 9017/Vibration
+	private int publishQos = 2;
 	
 	private final int NODE_ADDR = 0x0000 + nodeNumber; // ALAMAT NODE SENSOR
 	private final String NODE_SENSOR_ID = "node_"+nodeNumber; // IDENTITAS NODE SENSOR
@@ -72,13 +72,13 @@ public class MQTTSNClient {
 					isQoSTimeOut();
 					System.out.println("Batch number-:"+counter);
 					counter++;
-					sendPublish(tempTopic, topicType, sensor.getTemperatureValue(), publish_qos);
+					sendPublish(tempTopic, topicType, sensor.getTemperatureValue(), publishQos);
 					Thread.sleep(3000);
-					sendPublish(airTopic, topicType, sensor.getPressureValue(), publish_qos);
+					sendPublish(airTopic, topicType, sensor.getPressureValue(), publishQos);
 					Thread.sleep(3000);
-					sendPublish(humTopic, topicType, sensor.getHumidityValue(), publish_qos);
+					sendPublish(humTopic, topicType, sensor.getHumidityValue(), publishQos);
 					Thread.sleep(3000);
-					sendPublish(vibTopic, topicType, sensor.getVibrationValue(), publish_qos);
+					sendPublish(vibTopic, topicType, sensor.getVibrationValue(), publishQos);
 					Thread.sleep(30000);
 				}
 			} 
@@ -86,20 +86,32 @@ public class MQTTSNClient {
 	}
 
 	public void runVerySimpleClient() throws Exception{
-		GATEWAY_ADDR = 0x0001;
 		sensor = new Preon32Sensor();
 		sensor.init();
 		setupRadio();
 		
-		publish_qos = -1;
+		if (publishQos != -1){
+			System.out.println("Very simple client hanya mendukung pengiriman QoS -1, Nilai QoS diubah dari " +publishQos+" menjadi -1");
+			publishQos = -1;
+		}
+
+		if (topicType == MQTTSNPacket.NORMAL_TOPIC_ID) {
+			throw new Error ("very simple client tidak mendukung penggunaan normal topic ID");
+		}
+		
+
+		if (GATEWAY_ADDR == 0) {
+			throw new Error ("very simple client mewajibkan konfigurasi alamat gateway (GATEWAY_ADDR)");
+		}
+
 		while(true) {
-			sendPublish("5", MQTTSNPacket.PREDEFINED_TOPIC_ID, sensor.getTemperatureValue(), publish_qos);
+			sendPublish("5", topicType, sensor.getTemperatureValue(), publishQos);
 			Thread.sleep(500);
-			sendPublish("6", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getHumidityValue(), publish_qos);
+			sendPublish("6", topicType,sensor.getHumidityValue(), publishQos);
 			Thread.sleep(500);
-			sendPublish("7", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getPressureValue(), publish_qos);
+			sendPublish("7", topicType,sensor.getPressureValue(), publishQos);
 			Thread.sleep(500);
-			sendPublish("8", MQTTSNPacket.PREDEFINED_TOPIC_ID,sensor.getVibrationValue(), publish_qos);
+			sendPublish("8", topicType,sensor.getVibrationValue(), publishQos);
 			Thread.sleep(30000);
 		}
 	}
@@ -259,7 +271,7 @@ public class MQTTSNClient {
 	
 	private void handleCONNACK(MQTTSNPacket packet){
 		int returnCode = packet.getMsgVarPart()[0];
-		switch (returnCode){
+		switch (returnCode){	
 			case 0x00:
 				this.isConnected = true;
 				break;
