@@ -41,6 +41,17 @@ application {
     mainClass.set("aggregatingpreon32.GatewayMQTTSN")
 }
 
+tasks.named<org.gradle.api.tasks.bundling.Jar>("jar") {
+    manifest {
+        attributes(
+            "Main-Class" to "aggregatingpreon32.GatewayMQTTSN"
+        )
+    }
+
+    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })    
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
