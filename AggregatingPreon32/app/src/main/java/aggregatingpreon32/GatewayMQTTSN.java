@@ -23,20 +23,23 @@ import org.eclipse.paho.mqttv5.common.MqttMessage;
 import com.virtenio.commander.io.DataConnection;
 import com.virtenio.commander.toolsets.preon32.Preon32Helper;
 
+import io.github.cdimascio.dotenv.Dotenv;
+
 public class GatewayMQTTSN {
     // Configuration for Gateway
-    private final String PORT_NUMBER = "COM4";
+    private final Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+    private final String PORT_NUMBER = dotenv.get("SERIAL_PORT", "COM4");
 	private final int BROADCAST_ADDRESS = 0xFFFF; //Alamat Broadcast
-    private final int gatewayId = 0x0001; // 
+    private final int gatewayId = 0x0001; //
     private String gatewayAddress = "0x0001"; // Alamat Forwarder
 
-    // Broker Connection Settings
-    private final String clientId = "raynercuanda";
-    private final String host_tcp = "tcp://localhost:1883"; 
-    private final String host = "ssl://b6f0de39dbdb4fbc89413670aabed28a.s1.eu.hivemq.cloud:8883"; 
-    private final String username = "admin" ;
-    private final String password = "Admin123"; 
-    
+    // Broker Connection Settings (loaded from .env, see .env.example)
+    private final String clientId = dotenv.get("MQTT_CLIENT_ID", "raynercuanda");
+    private final String host_tcp = dotenv.get("MQTT_HOST_TCP", "tcp://localhost:1883");
+    private final String host = dotenv.get("MQTT_HOST");
+    private final String username = dotenv.get("MQTT_USER");
+    private final String password = dotenv.get("MQTT_PASS");
+
     
     private ConcurrentHashMap<String, Integer> nodeSensorMap = new ConcurrentHashMap<>(); // Client ID Key, WirelessNodeId Value
     private ConcurrentHashMap<Integer, ClientSession> clientSessionMap = new ConcurrentHashMap<>(); // Client ID Key, MQTTSNClient (WirelessNodeId, keepALiveTime, lastSeen)

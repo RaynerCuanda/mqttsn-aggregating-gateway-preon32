@@ -7,24 +7,27 @@ Full write-up: [`DokumenTA.pdf`](./DokumenTA.pdf).
 ## Overview
 
 ```
-Preon32 Sensor Nodes  --(MQTT-SN over serial/radio)-->  Gateway (Java)  --(MQTT/TLS)-->  MQTT Broker (HiveMQ Cloud)
-                                                                                                |
-                                                                                                v
-                                                                          Backend (Node/Express + Socket.IO)
-                                                                                                |
-                                                                                                v
-                                                                              Frontend (React dashboard)
+Preon32 Sensor Node --> Preon32 Forwarder --> Gateway --> MQTT Broker (HiveMQ Cloud) --> Backend (Subscriber) --> Frontend (Dashboard)
 ```
 
-The system has three parts, each in its own directory:
+The system has four parts, each in its own directory:
 
 | Directory | Role |
 |---|---|
-| [`AggregatingPreon32/`](./AggregatingPreon32) | Java gateway. Reads MQTT-SN packets from Preon32 nodes over a serial (USART) connection, parses/aggregates them, and republishes them as standard MQTT messages to a broker via the Eclipse Paho MQTTv5 client. |
+| [`Preon32Sandbox/`](./Preon32Sandbox) | Preon32 device apps: **Sensor node** (`Preon32Sensor.java`) reads its environment (temperature, humidity, air pressure, vibration) and publishes over MQTT-SN via IEEE 802.15.4; **Forwarder** (`ForwarderMQTTSN.java`) relays MQTT-SN traffic between sensor nodes and the gateway, since the gateway runs on a desktop and can't talk IEEE 802.15.4 directly. |
+| [`AggregatingPreon32/`](./AggregatingPreon32) | Aggregating Gateway. Reads MQTT-SN packets from the Preon32 forwarder over a serial (USART) connection, and converts them to MQTT messages sent to the broker via a single aggregating connection using the Eclipse Paho MQTTv5 client. |
 | [`Backend/`](./Backend) | Node.js/Express service that subscribes to the MQTT broker and re-broadcasts incoming sensor readings to connected clients in real time over Socket.IO. |
 | [`Frontend/`](./Frontend) | React (Vite) dashboard that consumes the Socket.IO stream and visualizes live sensor readings (temperature, humidity, air pressure, vibration) per room. |
 
-## 1. Gateway — `AggregatingPreon32/`
+## 1. Sensor Nodes & Forwarder — `Preon32Sandbox/`
+
+Sensor nodes built and deployed onto Preon32 hardware. It contains two device roles, both speaking MQTT-SN over IEEE 802.15.4:
+
+* **`Preon32Sensor.java` (Sensor node):** Reads onboard/attached sensors (temperature, humidity, air pressure, vibration) and publishes readings as MQTT-SN messages toward the nearest forwarder/gateway.
+* **`ForwarderMQTTSN.java` (Forwarder):** Relays MQTT-SN traffic between sensor nodes and the gateway. Needed because the gateway (`AggregatingPreon32/`) runs on a desktop machine and cannot receive IEEE 802.15.4 radio directly — the forwarder bridges radio traffic to the gateway's serial connection.
+* Shared packet framing logic lives in `MQTTSNPacket.java` / `MQTTSNClient.java` / `PublishHelper.java`.
+
+## 2. Gateway — `AggregatingPreon32/`
 
 A Java application (Gradle, `application` plugin) responsible for:
 
@@ -33,24 +36,15 @@ A Java application (Gradle, `application` plugin) responsible for:
 * **Aggregating proxy:** Consolidates traffic from multiple sensor nodes/forwarders before bridging it upstream, reducing the number of individual broker connections.
 * **QoS bridging:** Uses a bundled Eclipse Paho MQTTv5 client (vendored under `org.eclipse.paho.mqttv5`) so PUBACK/PUBREL/PUBCOMP handshakes on the MQTT side are driven by Paho's async token/promise API instead of manual state tracking.
 
-**Entry point:** `aggregatingpreon32.GatewayMQTTSN` (configured as `mainClass` in `app/build.gradle.kts`).
-
-### Prerequisites
-
-* JDK 21 (see `java.toolchain` in `app/build.gradle.kts`)
-* A Preon32 WSN device connected over serial (default port `COM4`, 115200 baud — edit `PORT_NUMBER` in `GatewayMQTTSN.java` to match your setup)
-* Reachable MQTT broker credentials (see `GatewayMQTTSN.java` for host/port/auth configuration)
-
-### Build & run
+Configuration (serial port and broker credentials) is read from a `.env` file in `AggregatingPreon32/` via `dotenv-java` (gitignored). Copy the template and fill it in:
 
 ```bash
 cd AggregatingPreon32
-./gradlew run        # build and run the gateway
-./gradlew build       # produce a runnable jar under app/build/libs
-./gradlew test        # run unit tests
+cp .env.example .env   # then edit .env with your SERIAL_PORT / MQTT_HOST / MQTT_USER / MQTT_PASS
+./gradlew run           # build and run the gateway
 ```
 
-## 2. Backend — `Backend/`
+## 3. Backend — `Backend/`
 
 An Express + Socket.IO server that bridges MQTT to the browser:
 
@@ -58,47 +52,18 @@ An Express + Socket.IO server that bridges MQTT to the browser:
 * Subscribes to all topics (`#`) and maps short MQTT-SN topic aliases (e.g. `7T`, `8H`) back to human-readable room/sensor names, alongside full-length `room/sensor` topics.
 * Emits every message as a `mqtt_data` Socket.IO event (`{ roomName, payloadName, payloadContent, timeStamp }`) to all connected dashboard clients.
 
-### Configuration
-
-Create a `.env` file in `Backend/` (not committed) with:
-
-```
-MQTT_HOST=<your-broker-host>
-MQTT_USER=<broker-username>
-MQTT_PASS=<broker-password>
-```
-
-> The broker port (`8883`) and protocol (`mqtts`) are currently hardcoded in `server.js`.
-
-### Run
+Configuration is read from a `.env` file in `Backend/` (gitignored). Copy the template and fill in your broker credentials:
 
 ```bash
 cd Backend
+cp .env.example .env   # then edit .env with your MQTT_HOST / MQTT_USER / MQTT_PASS
 npm install
-node server.js   # serves on http://localhost:8080
+node server.js          # serves on http://localhost:8080
 ```
 
-## 3. Frontend — `Frontend/`
+## 4. Frontend — `Frontend/`
 
 A React 19 + Vite dashboard that connects to the backend over Socket.IO and renders live sensor data per room.
-
-### Run
-
-```bash
-cd Frontend
-npm install
-npm run dev       # dev server, default http://localhost:5173
-npm run build      # production build
-```
-
-By default the backend's CORS/Socket.IO config expects the frontend at `http://localhost:5173`.
-
-## Running the full stack locally
-
-1. Start/point to an MQTT broker (e.g. HiveMQ Cloud, or a local Mosquitto instance) and note its credentials.
-2. Configure and run the **gateway** (`AggregatingPreon32/`) so it can read from the Preon32 hardware and publish to the broker.
-3. Configure `.env` and run the **backend** (`Backend/`) to bridge broker → browser.
-4. Run the **frontend** (`Frontend/`) and open it in a browser to see live readings.
 
 ## Documentation
 
